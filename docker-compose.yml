@@ -1,0 +1,11 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres
+    volumes:
+      - ./test-files:/home/
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: mysecretpassword
+    
