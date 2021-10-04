@@ -8,4 +8,14 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_PASSWORD: mysecretpassword
+  mssql:
+    image: mcr.microsoft.com/mssql/server
+    ports:
+      - "1433:1433"
+    env_file:
+      - sqlserver.env
+      - sapassword.env
+    command: >
+      bash -c "/opt/mssql/bin/sqlservr
+      && /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'yourStrong$Password' -q \"CREATE DATABASE nvssmessaging;\""
     
