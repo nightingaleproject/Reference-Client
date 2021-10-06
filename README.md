@@ -59,6 +59,23 @@ TODO Configuration, server address, credentials
     ```
     dotnet run
     ```
+# New Setup
+1. Setup the database docker containers
+    a. Run `docker-compose up --build` to initialize the client db (postgres) and the server db (mssql)
+    b. Run `dotnet ef database update` TODO update , had to comment out section that adds the timed service?
+    c. Populate the postgres db with test data
+    ```
+    cd test-files
+    python3 setup_db.py
+    ```
+2. Run the NCHS api server by following the README https://gitlab.mitre.org/nightingale/reference-nchs-api   
+    a. skip the docker command, already accomplished in step 1
+    d. exit the container and from the reference-nchs-api project directory run `dotnet ef database update`
+    e. run the api server with `dotnet run`
+3.  Now that the client db, server db, and the api server are all up and running, from the reference-client-api project root directory run
+    ```
+    dotnet run
+    ```
 
 Down the road questions
 - What state will they want to keep track of? If they use a native format, they will have two versions of the same record

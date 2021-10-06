@@ -17,7 +17,7 @@ namespace NVSSClient
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                })
+                }) 
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.AddHostedService<TimedHostedService>();

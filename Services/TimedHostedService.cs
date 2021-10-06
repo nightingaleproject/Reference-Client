@@ -1,16 +1,18 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using NVSSClient.Models;
+using NVSSClient.Controllers;
 
 using System.Text;
 using System.Net.Http;
 using System.Text.Json;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using Npgsql;
 using VRDR;
 
 namespace NVSSClient.Services
@@ -19,31 +21,23 @@ namespace NVSSClient.Services
     // check for responses, resend messages that haven't had a response in x time
     public class TimedHostedService : IHostedService, IDisposable
     {
-        private readonly AppDbContext _context;
+        //private readonly AppDbContext _context;
 
-        private static String jurisdictionEndPoint = "https://example.com/jurisdiction/message/endpoint";
+        private static String jurisdictionEndPoint = "https://example.com/jurisdiction/message/endpoint"; // make part of the configuration
         private static String apiUrl = "https://localhost:5001/bundles";
-        private static String cs = "Host=localhost;Username=postgres;Password=mysecretpassword;Database=postgres";
-
-        private static NpgsqlConnection con = new NpgsqlConnection(cs);
         private static String lastUpdated = new DateTime().ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
         private static int interval = 10;
         static readonly HttpClient client = new HttpClient();
-        public enum Status : int { 
-            Sent = 1,
-            Error = 2,
-            Acknowledged = 3
-        }
-
 
         private int executionCount = 0;
         private readonly ILogger<TimedHostedService> _logger;
+        private readonly IServiceScopeFactory _scopeFactory;
         private Timer _timer;
 
-        public TimedHostedService(AppDbContext context, ILogger<TimedHostedService> logger)
+        public TimedHostedService(ILogger<TimedHostedService> logger, IServiceScopeFactory scopeFactory)
         {
             _logger = logger;
-            _context = context;
+            _scopeFactory = scopeFactory;
         }
 
         public Task StartAsync(CancellationToken stoppingToken)
@@ -51,7 +45,7 @@ namespace NVSSClient.Services
             _logger.LogInformation("Timed Hosted Service running.");
 
             _timer = new Timer(DoWork, null, TimeSpan.Zero, 
-                TimeSpan.FromSeconds(20));
+                TimeSpan.FromSeconds(60));
 
             return Task.CompletedTask;
         }
@@ -64,8 +58,8 @@ namespace NVSSClient.Services
                 "Timed Hosted Service is working. Count: {Count}", count);
             
             // Step 1, submit new records in the db
-            SubmitRecords();
-
+            // TODO change this to a listening endpoint and submit messages on receipt
+            RetrieveMessages();
             // Step 2, poll for response messages from the server
             PollForResponses();
 
@@ -88,24 +82,73 @@ namespace NVSSClient.Services
         }
 
         // Retrieve records from database and send to the endpoint
-        private void SubmitRecords()
+
+        public void RetrieveMessages()
         {
-            var records = _context.RecordItems;
-            Int32 numRecords = records.Count();
-            _logger.LogInformation("Retrieved {records} from db.", numRecords);
-            foreach (RecordItem record in records)
+            // scope the db context, its not meant to last the whole life cycle
+            // and we need to deconflict for other db calls
+            List<BaseMessage> messages = new List<BaseMessage>();
+            List<MessageItem> messagesItems = new List<MessageItem>();
+            using (var scope = _scopeFactory.CreateScope()){
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                //do what you need
+                var records = context.RecordItems;
+                Int32 numRecords = records.Count();
+                foreach (RecordItem record in records)
+                {
+                    var recordId = record.Id;
+                    var jsonStr = record.Record;
+
+                    DeathRecord deathRecord = new DeathRecord(jsonStr, true);
+                    var message = new DeathRecordSubmission(deathRecord);
+                    message.MessageSource = jurisdictionEndPoint;
+                    messages.Add(message); // collect messages to use out of scope
+                    
+                    MessageItem item = new MessageItem();
+                    item.Uid = message.MessageId;
+                    item.StateAuxiliaryIdentifier = message.StateAuxiliaryIdentifier;
+                    item.CertificateNumber = message.CertificateNumber;
+                    item.DeathJurisdictionID = message.DeathJurisdictionID;
+                    item.Record = recordId;
+                    messagesItems.Add(item);
+                }
+            } //scope (and context) gets destroyed here
+
+            foreach (MessageItem item in messagesItems)
             {
-                var recordId = record.Id;
-                var jsonStr = record.Record;
-
-                DeathRecord deathRecord = new DeathRecord(jsonStr, true);
-                var message = new DeathRecordSubmission(deathRecord);
-                message.MessageSource = jurisdictionEndPoint;
-                //insertMessage(message, recordId);
-                postMessage(message);
+                InsertMessage(item);
             }
-
+            // foreach (BaseMessage msg in messages)
+            // {
+            //     postMessage(msg);
+            // }
         }
+
+       public void InsertMessage(MessageItem item)
+        {
+            try 
+            {
+                using (var scope = _scopeFactory.CreateScope()){
+                    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    // Create MessageItem
+                    item.Status = Models.MessageStatus.Sent;
+                    item.Retries = 0;
+                    item.SentOn = DateTime.UtcNow;
+
+                    // insert new message
+                    context.MessageItems.Add(item);
+                    context.SaveChanges();
+                    Console.WriteLine($"Inserted message {item.Uid}");
+                }
+
+            } catch (Exception e)
+            {
+                Console.WriteLine($"Error saving message {item.Uid}");
+                Console.WriteLine("\nException Caught!");	
+                Console.WriteLine("Message :{0} ",e.Message);
+            }
+        }
+
 
         private void PollForResponses()
         {
@@ -127,7 +170,7 @@ namespace NVSSClient.Services
         }
 
         // Post the message to the NCHS API
-        public static void postMessage(BaseMessage message)
+        public void postMessage(BaseMessage message)
         {
             
             var json = message.ToJSON();
@@ -188,154 +231,5 @@ namespace NVSSClient.Services
                 }
             }
         }
-
-        // DB functions, todo move to a controller?
-        public static void insertMessage(BaseMessage message, int recordId)
-        {
-            try 
-            {
-                using var con = new NpgsqlConnection(cs);
-                con.Open();
-                // insert new message
-                var sql = "INSERT INTO message(state_auxiliary_id, cert_number, nchs_id) VALUES (@state_auxiliary_id, @cert_number, @nchs_id)"; //, cert_number, nchs_id, record_id, status_id, @cert, @nchs, @record, @status
-                using var cmd = new NpgsqlCommand(sql, con);
-                
-                // business identifiers, these are the identifiers that tie together related messages (Submission, Ack, Coding Response etc.)
-                cmd.Parameters.AddWithValue("state_auxiliary_id", message.StateAuxiliaryIdentifier);
-                cmd.Parameters.AddWithValue("cert_number", message.CertificateNumber);
-                cmd.Parameters.AddWithValue("nchs_id", message.DeathJurisdictionID);
-                
-                // cmd.Parameters.AddWithValue("record", recordId);
-                // cmd.Parameters.AddWithValue("status", ((int)Status.Sent)); 
-
-                cmd.Prepare();        
-                Console.WriteLine("\nPrepared");
-
-                cmd.ExecuteNonQuery();
-                con.Close();
-            } catch (Exception e)
-            {
-                Console.WriteLine($"Error saving message {message.MessageId}");
-                Console.WriteLine("\nException Caught!");	
-                Console.WriteLine("Message :{0} ",e.Message);
-                con.Close();
-            }
-        }
-
-        public static void updateMessageStatus(BaseMessage message, Status status)
-        {
-            try 
-            {
-                using var con = new NpgsqlConnection(cs);
-                con.Open();
-                
-                // insert new message
-                var sql = "UPDATE message SET(status_id) VALUES (@status) WHERE state_auxiliary_id=@state AND cert_number=@cert AND nchs_id=@nchs;"; 
-                
-                using var cmd = new NpgsqlCommand(sql, con);
-                // set status 
-                cmd.Parameters.AddWithValue("status", ((int)status)); 
-                
-                // identifiers
-                cmd.Parameters.AddWithValue("state", message.StateAuxiliaryIdentifier);
-                cmd.Parameters.AddWithValue("cert", message.CertificateNumber);
-                cmd.Parameters.AddWithValue("nchs", message.DeathJurisdictionID);
-
-                cmd.Prepare();
-                cmd.ExecuteNonQuery();
-                con.Close();
-            } catch (Exception e)
-            {
-                Console.WriteLine($"Error updating message status {message.MessageId}");
-                Console.WriteLine("\nException Caught!");	
-                Console.WriteLine("Message :{0} ",e.Message);
-                con.Close();
-            }
-        }
-
-        // Acknowledgements are relevant to specific messages, not a message series (coding response, updates)
-        public static void acknowledgeMessage(AckMessage message)
-        {
-            try 
-            {
-                using var con = new NpgsqlConnection(cs);
-                con.Open();
-                
-                // insert new message
-                var sql = "UPDATE message SET(status_id) VALUES (@status) WHERE uid=@uid;"; 
-                using var cmd = new NpgsqlCommand(sql, con);
-
-                // set the acked message to acknowledged
-                cmd.Parameters.AddWithValue("status", ((int)Status.Acknowledged)); 
-                cmd.Parameters.AddWithValue("uid", message.AckedMessageId);
-
-                cmd.Prepare();
-                cmd.ExecuteNonQuery();
-                con.Close();
-            } catch (Exception e)
-            {
-                Console.WriteLine($"Error updating message status {message.MessageId}");
-                Console.WriteLine("\nException Caught!");	
-                Console.WriteLine("Message :{0} ",e.Message);
-                con.Close();
-            }
-        }
-
-        public static void updateMessageResponse(BaseMessage message, String response)
-        {
-            try 
-            {
-                using var con = new NpgsqlConnection(cs);
-                con.Open();
-                // add response to the message
-                var sql = "UPDATE message SET(response) VALUES (@response) WHERE state_auxiliary_id=@state AND cert_number=@cert AND nchs_id=@nchs;;"; 
-                using var cmd = new NpgsqlCommand(sql, con);
-                
-                // set status to sent, will update if it fails
-                cmd.Parameters.AddWithValue("response", response);
-                
-                // identifiers
-                cmd.Parameters.AddWithValue("state", message.StateAuxiliaryIdentifier);
-                cmd.Parameters.AddWithValue("cert", message.CertificateNumber);
-                cmd.Parameters.AddWithValue("nchs", message.DeathJurisdictionID);
-                
-                cmd.Prepare();
-                cmd.ExecuteNonQuery();
-                con.Close();
-            } catch (Exception e)
-            {
-                Console.WriteLine($"Error updating message status {message.MessageId}");
-                Console.WriteLine("\nException Caught!");	
-                Console.WriteLine("Message :{0} ",e.Message);
-                con.Close();
-            }
-        }
-
-        public static void updateMessageForResend(BaseMessage message)
-        {
-            try 
-            {
-                using var con = new NpgsqlConnection(cs);
-                con.Open();
-                // add response to the message
-                var sql = "UPDATE message SET last_submission=NOW(), retry = retry + 1, status = @status WHERE uid=@uid;"; 
-                using var cmd = new NpgsqlCommand(sql, con);
-                
-                // set status to sent, will update if it fails
-                cmd.Parameters.AddWithValue("status", ((int)Status.Sent)); 
-                cmd.Parameters.AddWithValue("uid", message.MessageId);
-                
-                cmd.Prepare();
-                cmd.ExecuteNonQuery();
-                con.Close();
-            } catch (Exception e)
-            {
-                Console.WriteLine($"Error updating message status {message.MessageId}");
-                Console.WriteLine("\nException Caught!");	
-                Console.WriteLine("Message :{0} ",e.Message);
-                con.Close();
-            }
-        }
-
     }
 }

@@ -19,12 +19,12 @@ namespace NVSSClient.Models
         // [StringLength(50)]  
         // [Column(TypeName = "varchar(50)")]
         public String StateAuxiliaryIdentifier { get; set; }
-        public long CertificateNumber { get; set; }
+        public uint? CertificateNumber { get; set; }
         // [StringLength(50)]  
         // [Column(TypeName = "varchar(50)")]
         public String DeathJurisdictionID { get; set; }
         // [ForeignKey ("RecordItem")]
-        public string Record { get; set; }
+        public long Record { get; set; }
         public int Retries { get; set; }
         public MessageStatus Status { get; set; }   
         public DateTime ? SentOn { get; set; }
