@@ -55,7 +55,7 @@ namespace NVSSClient.Controllers
                     item.DeathJurisdictionID = message.DeathJurisdictionID;
                     item.Message = message.ToJson().ToString();
                     item.Record = recordId;
-                    item.Status = Models.MessageStatus.Sent;
+                    item.Status = Models.MessageStatus.Sent; //TODO we need another status here before the message is sent
                     item.Retries = 0;
                     item.SentOn = DateTime.UtcNow;
                     
@@ -133,33 +133,31 @@ namespace NVSSClient.Controllers
             }
         }
 
-        // Acknowledgements are relevant to specific messages, not a message series (coding response, updates)
-        public void AcknowledgeMessage(AckMessage message)
-        {
-            try 
-            {
-                using var con = new NpgsqlConnection(cs);
-                con.Open();
+        // // Acknowledgements are relevant to specific messages, not a message series (coding response, updates)
+        // public void AcknowledgeMessage(AckMessage message)
+        // {
+        //     try 
+        //     {
+        //         using (var scope = _scopeFactory.CreateScope()){
+        //             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    
+        //             // find the message the ack is for
+        //             var message = context.MessageItem.Where(s => s.Uid == message.AckedMessageId).First();
+
+        //             // update message status
+        //             message.Status = Models.MessageStatus.Acknowledged;
+        //             context.Update(message);
+        //             context.SaveChanges();
                 
-                // insert new message
-                var sql = "UPDATE message SET(status_id) VALUES (@status) WHERE uid=@uid;"; 
-                using var cmd = new NpgsqlCommand(sql, con);
-
-                // set the acked message to acknowledged
-                cmd.Parameters.AddWithValue("status", ((int)MessageStatus.Acknowledged)); 
-                cmd.Parameters.AddWithValue("uid", message.AckedMessageId);
-
-                cmd.Prepare();
-                cmd.ExecuteNonQuery();
-                con.Close();
-            } catch (Exception e)
-            {
-                Console.WriteLine($"Error updating message status {message.MessageId}");
-                Console.WriteLine("\nException Caught!");	
-                Console.WriteLine("Message :{0} ",e.Message);
-                con.Close();
-            }
-        }
+        //         }
+        //     } catch (Exception e)
+        //     {
+        //         Console.WriteLine($"Error updating message status {message.AckedMessageId}");
+        //         Console.WriteLine("\nException Caught!");	
+        //         Console.WriteLine("Message :{0} ",e.Message);
+        //         con.Close();
+        //     }
+        // }
 
         public void UpdateMessageResponse(BaseMessage message, String response)
         {

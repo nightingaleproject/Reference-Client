@@ -7,6 +7,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using NVSSClient.Models;
 using NVSSClient.Controllers;
+using Hl7.Fhir.Serialization;
+using Hl7.Fhir.Model;
+using Hl7.Fhir.ElementModel;
 
 using System.Text;
 using System.Net.Http;
@@ -40,14 +43,14 @@ namespace NVSSClient.Services
             _scopeFactory = scopeFactory;
         }
 
-        public Task StartAsync(CancellationToken stoppingToken)
+        public System.Threading.Tasks.Task StartAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Timed Hosted Service running.");
 
             _timer = new Timer(DoWork, null, TimeSpan.Zero, 
                 TimeSpan.FromSeconds(60));
 
-            return Task.CompletedTask;
+            return System.Threading.Tasks.Task.CompletedTask;
         }
 
         private void DoWork(object state)
@@ -67,13 +70,13 @@ namespace NVSSClient.Services
             
         }
 
-        public Task StopAsync(CancellationToken stoppingToken)
+        public System.Threading.Tasks.Task StopAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Timed Hosted Service is stopping.");
 
             _timer?.Change(Timeout.Infinite, 0);
 
-            return Task.CompletedTask;
+            return System.Threading.Tasks.Task.CompletedTask;
         }
 
         public void Dispose()
@@ -91,7 +94,6 @@ namespace NVSSClient.Services
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 //do what you need
                 var items = context.MessageItems; // TODO change this to only get unacknowledged ones
-                Console.WriteLine($"Found records {count}", items.Count);
                 foreach (MessageItem item in items)
                 {
                     BaseMessage msg = BaseMessage.Parse(item.Message.ToString(), true);
@@ -99,32 +101,6 @@ namespace NVSSClient.Services
                 }
             } //scope (and context) gets destroyed here
         }
-
-    //    public void InsertMessage(MessageItem item)
-    //     {
-    //         try 
-    //         {
-    //             using (var scope = _scopeFactory.CreateScope()){
-    //                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    //                 // Create MessageItem
-    //                 item.Status = Models.MessageStatus.Sent;
-    //                 item.Retries = 0;
-    //                 item.SentOn = DateTime.UtcNow;
-
-    //                 // insert new message
-    //                 context.MessageItems.Add(item);
-    //                 context.SaveChanges();
-    //                 Console.WriteLine($"Inserted message {item.Uid}");
-    //             }
-
-    //         } catch (Exception e)
-    //         {
-    //             Console.WriteLine($"Error saving message {item.Uid}");
-    //             Console.WriteLine("\nException Caught!");	
-    //             Console.WriteLine("Message :{0} ",e.Message);
-    //         }
-    //     }
-
 
         private void PollForResponses()
         {
@@ -165,22 +141,21 @@ namespace NVSSClient.Services
             }
         }
 
-        // parses the bundle from nchs and processes each message response
-        public static void parseBundle(String bundle){
-            var array = JArray.Parse(bundle);
-            foreach (var item in array)
+        // parses the bundle of bundles from nchs and processes each message response
+        public void parseBundle(String bundleOfBundles){
+            FhirJsonParser parser = new FhirJsonParser();
+            Bundle bundle = parser.Parse<Bundle>(bundleOfBundles);
+            
+            foreach (var entry in bundle.Entry)
             {
                 try
                 {
-                    String msgJson = item["message"].ToString();
-                    BaseMessage msg = BaseMessage.Parse(msgJson, true);
-                    // TODO change this to the id of the initial message
-
+                    BaseMessage msg = BaseMessage.Parse<AckMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                     switch (msg.MessageType)
                     {
                         case "http://nchs.cdc.gov/vrdr_acknowledgement":
                             AckMessage message = new AckMessage(msg);
-                            //acknowledgeMessage(message);
+                            AcknowledgeMessage(message);
                             Console.WriteLine($"Received ask message: {msg.MessageId} for {message.AckedMessageId}");
                             break;
                         case "http://nchs.cdc.gov/vrdr_coding":
@@ -205,6 +180,32 @@ namespace NVSSClient.Services
                 {
                     Console.WriteLine($"Error parsing message: {e}");
                 }
+            }
+        }
+
+
+        // Acknowledgements are relevant to specific messages, not a message series (coding response, updates)
+        public void AcknowledgeMessage(AckMessage message)
+        {
+            try 
+            {
+                using (var scope = _scopeFactory.CreateScope()){
+                    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    
+                    // find the message the ack is for
+                    var original = context.MessageItems.Where(s => s.Uid == message.AckedMessageId).First();
+
+                    // update message status
+                    original.Status = Models.MessageStatus.Acknowledged;
+                    context.Update(original);
+                    context.SaveChanges();
+                    Console.WriteLine($"Successfully acked message {message.AckedMessageId}");
+                }
+            } catch (Exception e)
+            {
+                Console.WriteLine($"Error updating message status {message.AckedMessageId}");
+                Console.WriteLine("\nException Caught!");	
+                Console.WriteLine("Message :{0} ",e.Message);
             }
         }
     }

@@ -70,6 +70,7 @@ TODO Configuration, server address, credentials
     ```
 2. Run the NCHS api server by following the README https://gitlab.mitre.org/nightingale/reference-nchs-api   
     a. skip the docker command, already accomplished in step 1
+    b. change the start up command to use this pass word yourStrong$Password;
     d. exit the container and from the reference-nchs-api project directory run `dotnet ef database update`
     e. run the api server with `dotnet run`
 3.  Now that the client db, server db, and the api server are all up and running, from the reference-client-api project root directory run
