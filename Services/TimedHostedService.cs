@@ -59,7 +59,7 @@ namespace NVSSClient.Services
             
             // Step 1, submit new records in the db
             // TODO change this to a listening endpoint and submit messages on receipt
-            RetrieveMessages();
+            SubmitMessages();
             // Step 2, poll for response messages from the server
             PollForResponses();
 
@@ -83,71 +83,47 @@ namespace NVSSClient.Services
 
         // Retrieve records from database and send to the endpoint
 
-        public void RetrieveMessages()
+        public void SubmitMessages()
         {
             // scope the db context, its not meant to last the whole life cycle
             // and we need to deconflict for other db calls
-            List<BaseMessage> messages = new List<BaseMessage>();
-            List<MessageItem> messagesItems = new List<MessageItem>();
             using (var scope = _scopeFactory.CreateScope()){
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 //do what you need
-                var records = context.RecordItems;
-                Int32 numRecords = records.Count();
-                foreach (RecordItem record in records)
+                var items = context.MessageItems; // TODO change this to only get unacknowledged ones
+                Console.WriteLine($"Found records {count}", items.Count);
+                foreach (MessageItem item in items)
                 {
-                    var recordId = record.Id;
-                    var jsonStr = record.Record;
-
-                    DeathRecord deathRecord = new DeathRecord(jsonStr, true);
-                    var message = new DeathRecordSubmission(deathRecord);
-                    message.MessageSource = jurisdictionEndPoint;
-                    messages.Add(message); // collect messages to use out of scope
-                    
-                    MessageItem item = new MessageItem();
-                    item.Uid = message.MessageId;
-                    item.StateAuxiliaryIdentifier = message.StateAuxiliaryIdentifier;
-                    item.CertificateNumber = message.CertificateNumber;
-                    item.DeathJurisdictionID = message.DeathJurisdictionID;
-                    item.Record = recordId;
-                    messagesItems.Add(item);
+                    BaseMessage msg = BaseMessage.Parse(item.Message.ToString(), true);
+                    postMessage(msg);
                 }
             } //scope (and context) gets destroyed here
-
-            foreach (MessageItem item in messagesItems)
-            {
-                InsertMessage(item);
-            }
-            // foreach (BaseMessage msg in messages)
-            // {
-            //     postMessage(msg);
-            // }
         }
 
-       public void InsertMessage(MessageItem item)
-        {
-            try 
-            {
-                using (var scope = _scopeFactory.CreateScope()){
-                    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    // Create MessageItem
-                    item.Status = Models.MessageStatus.Sent;
-                    item.Retries = 0;
-                    item.SentOn = DateTime.UtcNow;
+    //    public void InsertMessage(MessageItem item)
+    //     {
+    //         try 
+    //         {
+    //             using (var scope = _scopeFactory.CreateScope()){
+    //                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    //                 // Create MessageItem
+    //                 item.Status = Models.MessageStatus.Sent;
+    //                 item.Retries = 0;
+    //                 item.SentOn = DateTime.UtcNow;
 
-                    // insert new message
-                    context.MessageItems.Add(item);
-                    context.SaveChanges();
-                    Console.WriteLine($"Inserted message {item.Uid}");
-                }
+    //                 // insert new message
+    //                 context.MessageItems.Add(item);
+    //                 context.SaveChanges();
+    //                 Console.WriteLine($"Inserted message {item.Uid}");
+    //             }
 
-            } catch (Exception e)
-            {
-                Console.WriteLine($"Error saving message {item.Uid}");
-                Console.WriteLine("\nException Caught!");	
-                Console.WriteLine("Message :{0} ",e.Message);
-            }
-        }
+    //         } catch (Exception e)
+    //         {
+    //             Console.WriteLine($"Error saving message {item.Uid}");
+    //             Console.WriteLine("\nException Caught!");	
+    //             Console.WriteLine("Message :{0} ",e.Message);
+    //         }
+    //     }
 
 
         private void PollForResponses()

@@ -62,7 +62,7 @@ TODO Configuration, server address, credentials
 # New Setup
 1. Setup the database docker containers
     a. Run `docker-compose up --build` to initialize the client db (postgres) and the server db (mssql)
-    b. Run `dotnet ef database update` TODO update , had to comment out section that adds the timed service?
+    b. Run `dotnet ef migrations add InitialDb` to initialize `dotnet ef database update` TODO update , had to comment out section that adds the timed service?
     c. Populate the postgres db with test data
     ```
     cd test-files

@@ -26,13 +26,16 @@ namespace NVSSClient.Migrations
                         .HasColumnType("bigint")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
-                    b.Property<long>("CertificateNumber")
+                    b.Property<long?>("CertificateNumber")
                         .HasColumnType("bigint");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("DeathJurisdictionID")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Message")
                         .HasColumnType("text");
 
                     b.Property<string>("Record")

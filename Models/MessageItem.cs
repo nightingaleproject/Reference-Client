@@ -23,8 +23,9 @@ namespace NVSSClient.Models
         // [StringLength(50)]  
         // [Column(TypeName = "varchar(50)")]
         public String DeathJurisdictionID { get; set; }
+        public String Message {get; set;}
         // [ForeignKey ("RecordItem")]
-        public long Record { get; set; }
+        public String Record { get; set; }
         public int Retries { get; set; }
         public MessageStatus Status { get; set; }   
         public DateTime ? SentOn { get; set; }

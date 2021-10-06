@@ -19,41 +19,88 @@ namespace NVSSClient.Controllers
         private readonly AppDbContext _context;
         private readonly IServiceProvider Services;
         private static String cs = "Host=localhost;Username=postgres;Password=mysecretpassword;Database=postgres";
+        private static String jurisdictionEndPoint = "https://example.com/jurisdiction/message/endpoint"; // make part of the configuration
 
         private static NpgsqlConnection con = new NpgsqlConnection(cs);
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public MessageController(AppDbContext context)
+        public MessageController(AppDbContext context, IServiceScopeFactory scopeFactory)
         {
             _context = context;
+            _scopeFactory = scopeFactory;
+        }
+
+
+        // POST: Records
+        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [HttpPost]
+        public async Task<ActionResult> PostIncomingRecord([FromBody] object text)
+        {               
+            try {
+                using (var scope = _scopeFactory.CreateScope()){
+                    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    //foreach (DeathRecord record in records)
+                    //{
+                    // Create a submission message for the record
+                    DeathRecord record = new DeathRecord(text.ToString(), true);
+                    var recordId = record.Identifier;
+                    var message = new DeathRecordSubmission(record);
+                    message.MessageSource = jurisdictionEndPoint;
+
+                    // Save it with it's business ids and status info
+                    MessageItem item = new MessageItem();
+                    item.Uid = message.MessageId;
+                    item.StateAuxiliaryIdentifier = message.StateAuxiliaryIdentifier;
+                    item.CertificateNumber = message.CertificateNumber;
+                    item.DeathJurisdictionID = message.DeathJurisdictionID;
+                    item.Message = message.ToJson().ToString();
+                    item.Record = recordId;
+                    item.Status = Models.MessageStatus.Sent;
+                    item.Retries = 0;
+                    item.SentOn = DateTime.UtcNow;
+                    
+                    // insert new message
+                    context.MessageItems.Add(item);
+                    context.SaveChanges();
+                    Console.WriteLine($"Inserted message {item.Uid}");
+                        
+                    //}
+                    
+                }
+            } catch {
+                return BadRequest();
+            }
+
+            // return HTTP status code 204 (No Content)
+            return NoContent();
         }
 
         // DB functions
-        public void InsertMessage(BaseMessage message, long recordId)
-        {
-            try 
-            {
-                // Create MessageItem
-                MessageItem item = new MessageItem();
-                item.Uid = message.MessageId;
-                item.StateAuxiliaryIdentifier = message.StateAuxiliaryIdentifier;
-                item.CertificateNumber = message.CertificateNumber;
-                item.DeathJurisdictionID = message.DeathJurisdictionID;
-                item.Record = recordId;
-                item.Status = Models.MessageStatus.Sent;
-                item.Retries = 0;
-                item.SentOn = DateTime.UtcNow;
+    //    public void InsertMessage(MessageItem item)
+    //     {
+    //         try 
+    //         {
+    //             using (var scope = _scopeFactory.CreateScope()){
+    //                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    //                 // Create MessageItem
+    //                 item.Status = Models.MessageStatus.Sent;
+    //                 item.Retries = 0;
+    //                 item.SentOn = DateTime.UtcNow;
 
-                // insert new message
-                _context.MessageItems.Add(item);
-                _context.SaveChanges();
-                Console.WriteLine($"Inserted message {message.MessageId}");
-            } catch (Exception e)
-            {
-                Console.WriteLine($"Error saving message {message.MessageId}");
-                Console.WriteLine("\nException Caught!");	
-                Console.WriteLine("Message :{0} ",e.Message);
-            }
-        }
+    //                 // insert new message
+    //                 context.MessageItems.Add(item);
+    //                 context.SaveChanges();
+    //                 Console.WriteLine($"Inserted message {item.Uid}");
+    //             }
+
+    //         } catch (Exception e)
+    //         {
+    //             Console.WriteLine($"Error saving message {item.Uid}");
+    //             Console.WriteLine("\nException Caught!");	
+    //             Console.WriteLine("Message :{0} ",e.Message);
+    //         }
+    //     }
+
 
         public void UpdateMessageStatus(BaseMessage message, MessageStatus status)
         {
