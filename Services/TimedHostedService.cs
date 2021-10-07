@@ -92,8 +92,9 @@ namespace NVSSClient.Services
             // and we need to deconflict for other db calls
             using (var scope = _scopeFactory.CreateScope()){
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                //do what you need
-                var items = context.MessageItems; // TODO change this to only get unacknowledged ones
+               
+                // only get unacknowledged ones
+                var items = context.MessageItems.Where(s => s.Status == Models.MessageStatus.Sent);
                 foreach (MessageItem item in items)
                 {
                     BaseMessage msg = BaseMessage.Parse(item.Message.ToString(), true);
@@ -150,13 +151,14 @@ namespace NVSSClient.Services
             {
                 try
                 {
-                    BaseMessage msg = BaseMessage.Parse<AckMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                    BaseMessage msg = BaseMessage.Parse<BaseMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                    //Bundle innerbundle = (Hl7.Fhir.Model.Bundle)entry.Resource;
                     switch (msg.MessageType)
                     {
                         case "http://nchs.cdc.gov/vrdr_acknowledgement":
-                            AckMessage message = new AckMessage(msg);
+                            AckMessage message = BaseMessage.Parse<AckMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             AcknowledgeMessage(message);
-                            Console.WriteLine($"Received ask message: {msg.MessageId} for {message.AckedMessageId}");
+                            Console.WriteLine($"Received ask message: {message.MessageId} for {message.AckedMessageId}");
                             break;
                         case "http://nchs.cdc.gov/vrdr_coding":
                             //message = new CodingResponseMessage(bundle);
