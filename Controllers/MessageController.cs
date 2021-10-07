@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using NVSSClient.Models;
 using Npgsql;
 using VRDR;
@@ -33,38 +34,39 @@ namespace NVSSClient.Controllers
 
         // POST: Records
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        // Receives a list of records to submit to the FHIR API
         [HttpPost]
-        public async Task<ActionResult> PostIncomingRecord([FromBody] object text)
+        public async Task<ActionResult> PostIncomingRecords([FromBody] List<object> textList)
         {               
             try {
                 using (var scope = _scopeFactory.CreateScope()){
                     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    //foreach (DeathRecord record in records)
-                    //{
-                    // Create a submission message for the record
-                    DeathRecord record = new DeathRecord(text.ToString(), true);
-                    var recordId = record.Identifier;
-                    var message = new DeathRecordSubmission(record);
-                    message.MessageSource = jurisdictionEndPoint;
+                    foreach (object text in textList)
+                    {
+                        // Create a submission message for the record
+                        DeathRecord record = new DeathRecord(text.ToString(), true);
+                        var recordId = record.Identifier;
+                        var message = new DeathRecordSubmission(record);
+                        message.MessageSource = jurisdictionEndPoint;
 
-                    // Save it with it's business ids and status info
-                    MessageItem item = new MessageItem();
-                    item.Uid = message.MessageId;
-                    item.StateAuxiliaryIdentifier = message.StateAuxiliaryIdentifier;
-                    item.CertificateNumber = message.CertificateNumber;
-                    item.DeathJurisdictionID = message.DeathJurisdictionID;
-                    item.Message = message.ToJson().ToString();
-                    item.Record = recordId;
-                    item.Status = Models.MessageStatus.Sent; //TODO we need another status here before the message is sent
-                    item.Retries = 0;
-                    item.SentOn = DateTime.UtcNow;
-                    
-                    // insert new message
-                    context.MessageItems.Add(item);
-                    context.SaveChanges();
-                    Console.WriteLine($"Inserted message {item.Uid}");
+                        // Save it with it's business ids and status info
+                        MessageItem item = new MessageItem();
+                        item.Uid = message.MessageId;
+                        item.StateAuxiliaryIdentifier = message.StateAuxiliaryIdentifier;
+                        item.CertificateNumber = message.CertificateNumber;
+                        item.DeathJurisdictionID = message.DeathJurisdictionID;
+                        item.Message = message.ToJson().ToString();
+                        item.Record = recordId;
+                        item.Status = Models.MessageStatus.Sent; //TODO we need another status here before the message is sent
+                        item.Retries = 0;
+                        item.SentOn = DateTime.UtcNow;
                         
-                    //}
+                        // insert new message
+                        context.MessageItems.Add(item);
+                        context.SaveChanges();
+                        Console.WriteLine($"Inserted message {item.Uid}");
+                        
+                    }
                     
                 }
             } catch {
@@ -76,31 +78,6 @@ namespace NVSSClient.Controllers
         }
 
         // DB functions
-    //    public void InsertMessage(MessageItem item)
-    //     {
-    //         try 
-    //         {
-    //             using (var scope = _scopeFactory.CreateScope()){
-    //                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    //                 // Create MessageItem
-    //                 item.Status = Models.MessageStatus.Sent;
-    //                 item.Retries = 0;
-    //                 item.SentOn = DateTime.UtcNow;
-
-    //                 // insert new message
-    //                 context.MessageItems.Add(item);
-    //                 context.SaveChanges();
-    //                 Console.WriteLine($"Inserted message {item.Uid}");
-    //             }
-
-    //         } catch (Exception e)
-    //         {
-    //             Console.WriteLine($"Error saving message {item.Uid}");
-    //             Console.WriteLine("\nException Caught!");	
-    //             Console.WriteLine("Message :{0} ",e.Message);
-    //         }
-    //     }
-
 
         public void UpdateMessageStatus(BaseMessage message, MessageStatus status)
         {
@@ -132,32 +109,6 @@ namespace NVSSClient.Controllers
                 con.Close();
             }
         }
-
-        // // Acknowledgements are relevant to specific messages, not a message series (coding response, updates)
-        // public void AcknowledgeMessage(AckMessage message)
-        // {
-        //     try 
-        //     {
-        //         using (var scope = _scopeFactory.CreateScope()){
-        //             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    
-        //             // find the message the ack is for
-        //             var message = context.MessageItem.Where(s => s.Uid == message.AckedMessageId).First();
-
-        //             // update message status
-        //             message.Status = Models.MessageStatus.Acknowledged;
-        //             context.Update(message);
-        //             context.SaveChanges();
-                
-        //         }
-        //     } catch (Exception e)
-        //     {
-        //         Console.WriteLine($"Error updating message status {message.AckedMessageId}");
-        //         Console.WriteLine("\nException Caught!");	
-        //         Console.WriteLine("Message :{0} ",e.Message);
-        //         con.Close();
-        //     }
-        // }
 
         public void UpdateMessageResponse(BaseMessage message, String response)
         {
@@ -213,7 +164,7 @@ namespace NVSSClient.Controllers
                 Console.WriteLine("Message :{0} ",e.Message);
                 con.Close();
             }
-        }
+        }  
 
     }
 }
