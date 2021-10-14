@@ -6,6 +6,7 @@ namespace NVSSClient.Models
 
     public enum MessageStatus 
     {
+        Pending,
         Sent,
         Acknowledged,
         Error

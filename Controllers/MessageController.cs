@@ -57,7 +57,7 @@ namespace NVSSClient.Controllers
                         item.DeathJurisdictionID = message.DeathJurisdictionID;
                         item.Message = message.ToJson().ToString();
                         item.Record = recordId;
-                        item.Status = Models.MessageStatus.Sent; //TODO we need another status here before the message is sent
+                        item.Status = Models.MessageStatus.Pending;
                         item.Retries = 0;
                         item.SentOn = DateTime.UtcNow;
                         

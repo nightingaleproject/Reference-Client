@@ -30,6 +30,8 @@ namespace NVSSClient.Services
         private static String apiUrl = "https://localhost:5001/bundles";
         private static String lastUpdated = new DateTime().ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
         private static int interval = 10;
+
+        private static int resend = 30; //Number of second before resend
         static readonly HttpClient client = new HttpClient();
 
         private int executionCount = 0;
@@ -48,7 +50,7 @@ namespace NVSSClient.Services
             _logger.LogInformation("Timed Hosted Service running.");
 
             _timer = new Timer(DoWork, null, TimeSpan.Zero, 
-                TimeSpan.FromSeconds(60));
+                TimeSpan.FromSeconds(interval));
 
             return System.Threading.Tasks.Task.CompletedTask;
         }
@@ -62,12 +64,11 @@ namespace NVSSClient.Services
             
             // Step 1, submit new records in the db
             // TODO change this to a listening endpoint and submit messages on receipt
-            SubmitMessages();
+            SubmitNewMessages();
             // Step 2, poll for response messages from the server
             PollForResponses();
-
             // Step 3, check for messages that haven't received an ack in X amount of time
-            
+            ResendMessages();
         }
 
         public System.Threading.Tasks.Task StopAsync(CancellationToken stoppingToken)
@@ -86,19 +87,55 @@ namespace NVSSClient.Services
 
         // Retrieve records from database and send to the endpoint
 
-        public void SubmitMessages()
+        public void SubmitNewMessages()
         {
             // scope the db context, its not meant to last the whole life cycle
             // and we need to deconflict for other db calls
             using (var scope = _scopeFactory.CreateScope()){
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                
-                // only get unacknowledged ones
-                var items = context.MessageItems.Where(s => s.Status == Models.MessageStatus.Sent);
+                // Send messages that have not yet been sent
+                var items = context.MessageItems.Where(s => s.Status == Models.MessageStatus.Pending).ToList();
                 foreach (MessageItem item in items)
                 {
                     BaseMessage msg = BaseMessage.Parse(item.Message.ToString(), true);
-                    postMessage(msg);
+                    Boolean success = postMessage(msg);
+                    if (success)
+                    {
+                        item.Status = Models.MessageStatus.Sent;
+                        item.SentOn = DateTime.Now;
+                        context.Update(item);
+                        context.SaveChanges();
+                    }
+                    // TODO do we need to capture errors in the db?
+                }
+            } //scope (and context) gets destroyed here
+        }
+
+        public void ResendMessages()
+        {
+            // scope the db context, its not meant to last the whole life cycle
+            // and we need to deconflict for other db calls
+            using (var scope = _scopeFactory.CreateScope()){
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+               
+                // only get unacknowledged ones that have exceeded the time wind
+                DateTime currentTime = DateTime.Now;
+                TimeSpan resendWindow = new TimeSpan(0,0,0,resend);
+                DateTime targetTime = currentTime.Subtract(resendWindow);
+
+                var items = context.MessageItems.Where(s => s.Status != Models.MessageStatus.Acknowledged && s.SentOn < targetTime).ToList();
+                foreach (MessageItem item in items)
+                {
+                    BaseMessage msg = BaseMessage.Parse(item.Message.ToString(), true);
+                    Boolean success = postMessage(msg);
+                    if (success)
+                    {
+                        item.Status = Models.MessageStatus.Sent;
+                        item.SentOn = DateTime.Now;
+                        context.Update(item);
+                        context.SaveChanges();
+                    }
                 }
             } //scope (and context) gets destroyed here
         }
@@ -123,7 +160,7 @@ namespace NVSSClient.Services
         }
 
         // Post the message to the NCHS API
-        public void postMessage(BaseMessage message)
+        public Boolean postMessage(BaseMessage message)
         {
             
             var json = message.ToJSON();
@@ -135,10 +172,11 @@ namespace NVSSClient.Services
             var response = client.PostAsync(apiUrl, data).Result;
             if (response.IsSuccessStatusCode){
                 Console.WriteLine($"Successfully submitted {message.MessageId}");
+                return true;
             }
             else {
-                //updateMessageStatus(message, Status.Error);
                 Console.WriteLine($"Error submitting {message.MessageId}");
+                return false;
             }
         }
 
