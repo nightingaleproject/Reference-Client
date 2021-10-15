@@ -77,94 +77,16 @@ namespace NVSSClient.Controllers
             return NoContent();
         }
 
-        // DB functions
-
-        public void UpdateMessageStatus(BaseMessage message, MessageStatus status)
+        // GET: Message Status
+        [HttpGet]
+        public async Task<ActionResult<List<MessageItem>>> GetMessageStatus()
         {
-            try 
-            {
-                using var con = new NpgsqlConnection(cs);
-                con.Open();
-                
-                // insert new message
-                var sql = "UPDATE message SET(status_id) VALUES (@status) WHERE state_auxiliary_id=@state AND cert_number=@cert AND nchs_id=@nchs;"; 
-                
-                using var cmd = new NpgsqlCommand(sql, con);
-                // set status 
-                cmd.Parameters.AddWithValue("status", ((int)status)); 
-                
-                // identifiers
-                cmd.Parameters.AddWithValue("state", message.StateAuxiliaryIdentifier);
-                cmd.Parameters.AddWithValue("cert", message.CertificateNumber);
-                cmd.Parameters.AddWithValue("nchs", message.DeathJurisdictionID);
-
-                cmd.Prepare();
-                cmd.ExecuteNonQuery();
-                con.Close();
-            } catch (Exception e)
-            {
-                Console.WriteLine($"Error updating message status {message.MessageId}");
-                Console.WriteLine("\nException Caught!");	
-                Console.WriteLine("Message :{0} ",e.Message);
-                con.Close();
+            // Return a list of messages and their status
+            using (var scope = _scopeFactory.CreateScope()){
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var messages = context.MessageItems.ToList();
+                return messages;
             }
         }
-
-        public void UpdateMessageResponse(BaseMessage message, String response)
-        {
-            try 
-            {
-                using var con = new NpgsqlConnection(cs);
-                con.Open();
-                // add response to the message
-                var sql = "UPDATE message SET(response) VALUES (@response) WHERE state_auxiliary_id=@state AND cert_number=@cert AND nchs_id=@nchs;;"; 
-                using var cmd = new NpgsqlCommand(sql, con);
-                
-                // set status to sent, will update if it fails
-                cmd.Parameters.AddWithValue("response", response);
-                
-                // identifiers
-                cmd.Parameters.AddWithValue("state", message.StateAuxiliaryIdentifier);
-                cmd.Parameters.AddWithValue("cert", message.CertificateNumber);
-                cmd.Parameters.AddWithValue("nchs", message.DeathJurisdictionID);
-                
-                cmd.Prepare();
-                cmd.ExecuteNonQuery();
-                con.Close();
-            } catch (Exception e)
-            {
-                Console.WriteLine($"Error updating message status {message.MessageId}");
-                Console.WriteLine("\nException Caught!");	
-                Console.WriteLine("Message :{0} ",e.Message);
-                con.Close();
-            }
-        }
-
-        public static void UpdateMessageForResend(BaseMessage message)
-        {
-            try 
-            {
-                using var con = new NpgsqlConnection(cs);
-                con.Open();
-                // add response to the message
-                var sql = "UPDATE message SET last_submission=NOW(), retry = retry + 1, status = @status WHERE uid=@uid;"; 
-                using var cmd = new NpgsqlCommand(sql, con);
-                
-                // set status to sent, will update if it fails
-                cmd.Parameters.AddWithValue("status", ((int)MessageStatus.Sent)); 
-                cmd.Parameters.AddWithValue("uid", message.MessageId);
-                
-                cmd.Prepare();
-                cmd.ExecuteNonQuery();
-                con.Close();
-            } catch (Exception e)
-            {
-                Console.WriteLine($"Error updating message status {message.MessageId}");
-                Console.WriteLine("\nException Caught!");	
-                Console.WriteLine("Message :{0} ",e.Message);
-                con.Close();
-            }
-        }  
-
     }
 }
