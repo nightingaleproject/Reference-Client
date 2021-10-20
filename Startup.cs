@@ -23,13 +23,12 @@ namespace NVSSClient
             services.AddMemoryCache();
             services.AddMiniProfiler(options => options.RouteBasePath = "/profiler").AddEntityFramework();
             // configure your db here, this example uses postgres
-            var connection = "Host=localhost;Username=postgres;Password=mysecretpassword;Database=postgres";
             // Postgres
-            services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connection));
+            services.AddDbContext<AppDbContext>(options => options.UseNpgsql(Configuration.GetConnectionString("ClientDatabase")));
             // MySql
-            //services.AddDbContext<AppContext>(options => options.UseMySql(connection));
+            //services.AddDbContext<AppContext>(options => options.UseMySql(Configuration.GetConnectionString("ClientDatabase")));
             // SQL server
-            //services.AddDbContext<AppContext>(options => options.UseSqlServer(connection));
+            //services.AddDbContext<AppContext>(options => options.UseSqlServer(Configuration.GetConnectionString("ClientDatabase")));
             
             services.AddControllers();
         }

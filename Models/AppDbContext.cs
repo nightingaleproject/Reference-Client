@@ -11,7 +11,7 @@ namespace NVSSClient.Models
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)
         { }
-        public DbSet<RecordItem> RecordItems { get; set; }
+        public DbSet<ResponseItem> ResponseItems { get; set; }
         public DbSet<MessageItem> MessageItems { get; set; }
 
         public override int SaveChanges()

@@ -45,7 +45,6 @@ namespace NVSSClient.Controllers
                     {
                         // Create a submission message for the record
                         DeathRecord record = new DeathRecord(text.ToString(), true);
-                        var recordId = record.Identifier;
                         var message = new DeathRecordSubmission(record);
                         message.MessageSource = jurisdictionEndPoint;
 
@@ -56,10 +55,8 @@ namespace NVSSClient.Controllers
                         item.CertificateNumber = message.CertificateNumber;
                         item.DeathJurisdictionID = message.DeathJurisdictionID;
                         item.Message = message.ToJson().ToString();
-                        item.Record = recordId;
                         item.Status = Models.MessageStatus.Pending;
                         item.Retries = 0;
-                        item.SentOn = DateTime.UtcNow;
                         
                         // insert new message
                         context.MessageItems.Add(item);
