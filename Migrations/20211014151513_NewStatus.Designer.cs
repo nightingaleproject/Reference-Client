@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NVSSClient.Models;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -9,9 +10,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NVSSClient.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20211014151513_NewStatus")]
+    partial class NewStatus
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -35,14 +37,17 @@ namespace NVSSClient.Migrations
                     b.Property<string>("DeathJurisdictionID")
                         .HasColumnType("text");
 
-                    b.Property<DateTime?>("ExpirationDate")
-                        .HasColumnType("timestamp without time zone");
-
                     b.Property<string>("Message")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Record")
                         .HasColumnType("text");
 
                     b.Property<int>("Retries")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("SentOn")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("StateAuxiliaryIdentifier")
                         .HasColumnType("text");
@@ -61,29 +66,17 @@ namespace NVSSClient.Migrations
                     b.ToTable("MessageItems");
                 });
 
-            modelBuilder.Entity("NVSSClient.Models.ResponseItem", b =>
+            modelBuilder.Entity("NVSSClient.Models.RecordItem", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
-                    b.Property<long?>("CertificateNumber")
-                        .HasColumnType("bigint");
-
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<string>("DeathJurisdictionID")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Message")
-                        .HasColumnType("text");
-
-                    b.Property<string>("StateAuxiliaryIdentifier")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Uid")
+                    b.Property<string>("Record")
                         .HasColumnType("text");
 
                     b.Property<DateTime>("UpdatedDate")
@@ -91,7 +84,7 @@ namespace NVSSClient.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ResponseItems");
+                    b.ToTable("RecordItems");
                 });
 #pragma warning restore 612, 618
         }

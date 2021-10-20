@@ -33,7 +33,6 @@ TODO Configuration, server address, credentials
 1. Setup the database docker containers
     a. Run `docker-compose up --build` to initialize the client db (postgres) and the server db (mssql)
     b. Run `dotnet ef migrations add InitialDb` to initialize, then `dotnet ef database update` TODO update , had to comment out section that adds the timed service?
-    c. Populate the postgres db with test data
 2. Run the NCHS api server by following the README https://gitlab.mitre.org/nightingale/reference-nchs-api   
     a. skip the docker command, already accomplished in step 1
     b. change the start up command to use this pass word yourStrong$Password;
