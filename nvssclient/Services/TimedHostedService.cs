@@ -154,6 +154,10 @@ namespace NVSSClient.Services
             String nextUpdated = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
             
             // retrieve new messages
+            // TODO add auth token
+            string authorization = "";
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authorization);
+
             var address = apiUrl;
             Console.WriteLine($"Get messages since: {lastUpdated}");
             if (!string.IsNullOrWhiteSpace(lastUpdated)){
@@ -176,6 +180,10 @@ namespace NVSSClient.Services
             var data = new StringContent(json, Encoding.UTF8, "application/json");
 
             using var client = new HttpClient();
+
+            // TODO add auth token
+            string authorization = "";
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authorization);
 
             var response = client.PostAsync(apiUrl, data).Result;
             if (response.IsSuccessStatusCode){
