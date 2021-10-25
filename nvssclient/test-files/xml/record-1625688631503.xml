@@ -1,0 +1,63 @@
+<Bundle xmlns="http://hl7.org/fhir">
+  <id value="6137f900-3934-486f-9ebf-0e753c946c7a" />
+  <type value="message" />
+  <timestamp value="2021-07-07T20:10:22.4524759+00:00" />
+  <entry>
+    <fullUrl value="urn:uuid:5305717d-62d1-49e4-9d7c-19730979b646" />
+    <resource>
+      <MessageHeader>
+        <id value="5305717d-62d1-49e4-9d7c-19730979b646" />
+        <eventUri value="http://nchs.cdc.gov/vrdr_extraction_error" />
+        <destination>
+          <endpoint value="https://example.com/jurisdiction/message/endpoint" />
+        </destination>
+        <source>
+          <endpoint value="http://nchs.cdc.gov/vrdr_submission" />
+        </source>
+        <response>
+          <identifier value="788ee9a4-043b-4c85-8ed9-c5f8aea7cc67" />
+          <code value="fatal-error" />
+          <details>
+            <reference value="urn:uuid:3bca85f4-ab0e-467a-bcd2-b40fc55131f9" />
+          </details>
+        </response>
+        <focus>
+          <reference value="urn:uuid:0c3664ab-1d5c-4a36-ad1b-92bac87b2650" />
+        </focus>
+      </MessageHeader>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:0c3664ab-1d5c-4a36-ad1b-92bac87b2650" />
+    <resource>
+      <Parameters>
+        <id value="0c3664ab-1d5c-4a36-ad1b-92bac87b2650" />
+        <parameter>
+          <name value="cert_no" />
+          <valueUnsignedInt value="50" />
+        </parameter>
+        <parameter>
+          <name value="jurisdiction_id" />
+          <valueString value="AL" />
+        </parameter>
+        <parameter>
+          <name value="death_year" />
+          <valueUnsignedInt value="2019" />
+        </parameter>
+      </Parameters>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:3bca85f4-ab0e-467a-bcd2-b40fc55131f9" />
+    <resource>
+      <OperationOutcome>
+        <id value="3bca85f4-ab0e-467a-bcd2-b40fc55131f9" />
+        <issue>
+          <severity value="fatal" />
+          <code value="invalid" />
+          <diagnostics value="This is a fake message" />
+        </issue>
+      </OperationOutcome>
+    </resource>
+  </entry>
+</Bundle>

@@ -32,13 +32,13 @@ TODO Configuration, server address, credentials
 # Setup
 1. Setup the database docker containers
     a. Run `docker-compose up --build` to initialize the client db (postgres) and the server db (mssql)
-    b. Run `dotnet ef migrations add InitialDb` to initialize, then `dotnet ef database update` TODO update , had to comment out section that adds the timed service?
+    b. From the nvssclient directory, run `dotnet ef migrations add InitialDb` to initialize, then `dotnet ef database update` TODO update , had to comment out section that adds the timed service?
 2. Run the NCHS api server by following the README https://gitlab.mitre.org/nightingale/reference-nchs-api   
     a. skip the docker command, already accomplished in step 1
     b. change the start up command to use this pass word yourStrong$Password;
     d. from the reference-nchs-api/messaging project directory run `dotnet ef database update`
     e. run the api server with `dotnet run --project messaging`
-3.  Now that the client db, server db, and the api server are all up and running, from the reference-client-api project root directory run
+3.  Now that the client db, server db, and the api server are all up and running, from the reference-client-api/nvssclient project directory run
     ```
     dotnet run
     ```

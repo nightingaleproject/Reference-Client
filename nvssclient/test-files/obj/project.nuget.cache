@@ -1,0 +1,72 @@
+{
+  "version": 2,
+  "dgSpecHash": "nRXHfV9paZ/sj0u9iPXXwYTWPzMBUWIMK2WH2gBT+xGo1skBzgu8+iktBkPaIxe1HROd7Bv8/5YdYNjz4uiuYA==",
+  "success": false,
+  "projectFilePath": "/Users/smacadam/NVSS/reference-client-api/test-files/NVSSClient.csproj",
+  "expectedPackageFiles": [
+    "/Users/smacadam/.nuget/packages/microsoft.aspnetcore.mvc.newtonsoftjson/3.1.3/microsoft.aspnetcore.mvc.newtonsoftjson.3.1.3.nupkg.sha512",
+    "/Users/smacadam/.nuget/packages/microsoft.aspnetcore.spaservices.extensions/3.1.3/microsoft.aspnetcore.spaservices.extensions.3.1.3.nupkg.sha512",
+    "/Users/smacadam/.nuget/packages/microsoft.entityframeworkcore.design/5.0.7/microsoft.entityframeworkcore.design.5.0.7.nupkg.sha512",
+    "/Users/smacadam/.nuget/packages/microsoft.entityframeworkcore.sqlite/3.1.3/microsoft.entityframeworkcore.sqlite.3.1.3.nupkg.sha512",
+    "/Users/smacadam/.nuget/packages/microsoft.entityframeworkcore.sqlserver/5.0.7/microsoft.entityframeworkcore.sqlserver.5.0.7.nupkg.sha512",
+    "/Users/smacadam/.nuget/packages/microsoft.netframework.referenceassemblies/1.0.0/microsoft.netframework.referenceassemblies.1.0.0.nupkg.sha512",
+    "/Users/smacadam/.nuget/packages/microsoft.netframework.referenceassemblies.net20/1.0.0/microsoft.netframework.referenceassemblies.net20.1.0.0.nupkg.sha512",
+    "/Users/smacadam/.nuget/packages/vrdr.messaging/3.1.1/vrdr.messaging.3.1.1.nupkg.sha512"
+  ],
+  "logs": [
+    {
+      "code": "NU1202",
+      "level": "Error",
+      "message": "Package Microsoft.AspNetCore.Mvc.NewtonsoftJson 3.1.3 is not compatible with net31 (.NETFramework,Version=v3.1). Package Microsoft.AspNetCore.Mvc.NewtonsoftJson 3.1.3 supports: netcoreapp3.1 (.NETCoreApp,Version=v3.1)",
+      "libraryId": "Microsoft.AspNetCore.Mvc.NewtonsoftJson",
+      "targetGraphs": [
+        ".NETFramework,Version=v3.1"
+      ]
+    },
+    {
+      "code": "NU1202",
+      "level": "Error",
+      "message": "Package Microsoft.AspNetCore.SpaServices.Extensions 3.1.3 is not compatible with net31 (.NETFramework,Version=v3.1). Package Microsoft.AspNetCore.SpaServices.Extensions 3.1.3 supports: netcoreapp3.1 (.NETCoreApp,Version=v3.1)",
+      "libraryId": "Microsoft.AspNetCore.SpaServices.Extensions",
+      "targetGraphs": [
+        ".NETFramework,Version=v3.1"
+      ]
+    },
+    {
+      "code": "NU1202",
+      "level": "Error",
+      "message": "Package Microsoft.EntityFrameworkCore.Sqlite 3.1.3 is not compatible with net31 (.NETFramework,Version=v3.1). Package Microsoft.EntityFrameworkCore.Sqlite 3.1.3 supports: netstandard2.0 (.NETStandard,Version=v2.0)",
+      "libraryId": "Microsoft.EntityFrameworkCore.Sqlite",
+      "targetGraphs": [
+        ".NETFramework,Version=v3.1"
+      ]
+    },
+    {
+      "code": "NU1202",
+      "level": "Error",
+      "message": "Package Microsoft.EntityFrameworkCore.SqlServer 5.0.7 is not compatible with net31 (.NETFramework,Version=v3.1). Package Microsoft.EntityFrameworkCore.SqlServer 5.0.7 supports: netstandard2.1 (.NETStandard,Version=v2.1)",
+      "libraryId": "Microsoft.EntityFrameworkCore.SqlServer",
+      "targetGraphs": [
+        ".NETFramework,Version=v3.1"
+      ]
+    },
+    {
+      "code": "NU1202",
+      "level": "Error",
+      "message": "Package VRDR.Messaging 3.1.1 is not compatible with net31 (.NETFramework,Version=v3.1). Package VRDR.Messaging 3.1.1 supports: netstandard2.0 (.NETStandard,Version=v2.0)",
+      "libraryId": "VRDR.Messaging",
+      "targetGraphs": [
+        ".NETFramework,Version=v3.1"
+      ]
+    },
+    {
+      "code": "NU1202",
+      "level": "Error",
+      "message": "Package Microsoft.EntityFrameworkCore.Design 5.0.7 is not compatible with net31 (.NETFramework,Version=v3.1). Package Microsoft.EntityFrameworkCore.Design 5.0.7 supports: netstandard2.1 (.NETStandard,Version=v2.1)",
+      "libraryId": "Microsoft.EntityFrameworkCore.Design",
+      "targetGraphs": [
+        ".NETFramework,Version=v3.1"
+      ]
+    }
+  ]
+}

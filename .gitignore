@@ -1,3 +1,9 @@
 test-files/*
-bin
-obj
+nvssclient/bin
+nvssclient/obj
+nvssclient/net5.0
+nvssclient/appsettings.json
+nvssclient.tests/bin
+nvssclient.tests/obj
+nvssclient.tests/appsettings.Test.json
+

@@ -1,0 +1,15 @@
+{
+    "Kestrel": {
+        "EndPoints": {
+            "Http": {
+            "Url": "http://localhost:4300"
+            }
+        }
+    },
+    "ConnectionStrings": {
+        "ClientDatabase": "Host=localhost;Username=postgres;Password=mypassword;Database=postgres;",
+        "ApiServer": "https://localhost:5001/bundles"
+    },
+    "ResendInterval" : 30,
+    "PollingInterval" : 10
+}
