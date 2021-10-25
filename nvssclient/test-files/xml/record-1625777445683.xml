@@ -1,0 +1,1168 @@
+<Bundle xmlns="http://hl7.org/fhir">
+  <id value="3b225371-704a-4a72-8e26-78de1ffa328c" />
+  <meta>
+    <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Death-Certificate-Document" />
+  </meta>
+  <identifier>
+    <system value="http://nchs.cdc.gov/vrdr_id" />
+    <value value="2021MA153493" />
+  </identifier>
+  <type value="document" />
+  <timestamp value="2021-07-08T20:49:48.2181152+00:00" />
+  <entry>
+    <fullUrl value="urn:uuid:99156213-fdd4-4d4b-baf6-2e9829a3db5d" />
+    <resource>
+      <Composition>
+        <id value="99156213-fdd4-4d4b-baf6-2e9829a3db5d" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Death-Certificate" />
+        </meta>
+        <status value="final" />
+        <type>
+          <coding>
+            <system value="http://loinc.org" />
+            <code value="64297-5" />
+            <display value="Death certificate" />
+          </coding>
+        </type>
+        <subject>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </subject>
+        <date value="2021-07-07T00:00:00" />
+        <author>
+          <reference value="urn:uuid:b9ccb74d-1eb0-4203-81a4-1692e5556739" />
+        </author>
+        <title value="Death Certificate" />
+        <attester>
+          <mode value="legal" />
+          <time value="2021-07-08T03:28:29" />
+          <party>
+            <reference value="urn:uuid:b9ccb74d-1eb0-4203-81a4-1692e5556739" />
+          </party>
+        </attester>
+        <event>
+          <code>
+            <coding>
+              <system value="http://snomed.info/sct" />
+              <code value="103693007" />
+              <display value="Diagnostic procedure (procedure)" />
+            </coding>
+          </code>
+          <detail>
+            <reference value="urn:uuid:6835a5f7-2ada-40f7-ba48-163930025e7b" />
+          </detail>
+        </event>
+        <section>
+          <entry>
+            <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:b9ccb74d-1eb0-4203-81a4-1692e5556739" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:22169b41-f2a6-42a3-babb-530411e767dc" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:a7538022-45fc-49f9-95a6-129031e94b0d" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:6835a5f7-2ada-40f7-ba48-163930025e7b" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:d5f24615-f1ef-4a49-9225-9d66b5e9cdfb" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:36b992f7-5abf-40e3-a288-f07f6fb384aa" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:485cb0f4-9fc8-49c2-af50-6627224aec11" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:51e431d2-3051-4306-bb2c-d753b37a94d1" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:e0fc5edd-d8b9-4bdc-8c7a-b0de47e25ac4" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:623587da-b763-4ba2-8c66-344199b46a93" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:d2131591-fd3a-4782-8ad4-673f3d926ee0" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:801e470e-88a9-4ac7-807a-9038c7ed057d" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:f1929ce5-6d8d-49b3-80fd-721d3d015257" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:4942054a-97b6-4745-87fb-cb57fbda83db" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:8b94ac33-ad77-49ae-b729-54e790169879" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:aeb4d366-e7f0-4231-adad-1ed3b16903be" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:cebb30c2-bebc-401c-9867-0f667a0c95f7" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:28765404-db43-4100-99ee-4695f1954a05" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:1313309e-d8aa-415c-8985-798c1a3b3612" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:85c43cf8-2f72-460a-ae69-038d048ed465" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:a46b8bc2-9ed3-41d3-9f82-44e3ec438c8a" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:65bb83b5-16c8-4bd0-8deb-3f167ffd22ec" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:35d76c44-765e-4277-9a6a-00c0e2456a21" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:37b868a8-37a7-4243-88e0-f4d3ffb1c2a9" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:a82b5e7e-4b02-4bfe-9d01-ffd4ffeb6b74" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:36fbe2d7-3395-4b88-94f9-acd1ba8c6293" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:63f97c27-7c28-4e02-b622-3d1e66a15f6f" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:e59f50bb-1490-4441-8a00-7dd139c9c11d" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:b6cec16b-c0ee-498f-8572-088c8d1ba074" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:86a46a90-66c4-4894-a16d-4f5a222de2ae" />
+          </entry>
+          <entry>
+            <reference value="urn:uuid:e70a9fa5-9d0a-43c0-9db4-e94b9fb890c4" />
+          </entry>
+        </section>
+      </Composition>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+    <resource>
+      <Patient>
+        <id value="6740a776-2027-4911-9bbb-614f21aeddff" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Decedent" />
+        </meta>
+        <extension url="http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex">
+          <valueCode value="M" />
+        </extension>
+        <extension url="http://hl7.org/fhir/StructureDefinition/patient-birthPlace">
+          <valueAddress>
+            <city value="Marblehead" />
+            <district value="Essex" />
+            <state value="MA" />
+            <country value="United States" />
+          </valueAddress>
+        </extension>
+        <extension url="http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity">
+          <extension url="ombCategory">
+            <valueCoding>
+              <system value="urn:oid:2.16.840.1.113883.6.238" />
+              <code value="2186-5" />
+              <display value="Not Hispanic or Latino" />
+            </valueCoding>
+          </extension>
+          <extension url="text">
+            <valueString value="Not Hispanic or Latino" />
+          </extension>
+        </extension>
+        <extension url="http://hl7.org/fhir/us/core/StructureDefinition/us-core-race">
+          <extension url="ombCategory">
+            <valueCoding>
+              <system value="urn:oid:2.16.840.1.113883.6.238" />
+              <code value="2106-3" />
+              <display value="White" />
+            </valueCoding>
+          </extension>
+          <extension url="text">
+            <valueString value="White" />
+          </extension>
+        </extension>
+        <identifier>
+          <type>
+            <coding>
+              <system value="http://terminology.hl7.org/CodeSystem/v2-0203" />
+              <code value="SB" />
+              <display value="Social Beneficiary Identifier" />
+            </coding>
+          </type>
+          <system value="http://hl7.org/fhir/sid/us-ssn" />
+          <value value="775104481" />
+        </identifier>
+        <name>
+          <use value="official" />
+          <family value="Ortiz" />
+          <given value="Stanley" />
+          <given value="Randolph" />
+          <suffix value="III" />
+        </name>
+        <name>
+          <use value="nickname" />
+          <family value="Bogan" />
+          <given value="Loren" />
+        </name>
+        <gender value="male" />
+        <birthDate value="1884-08-07" />
+        <address>
+          <extension url="http://hl7.org/fhir/us/vrdr/StructureDefinition/Within-City-Limits-Indicator">
+            <valueCoding>
+              <system value="http://terminology.hl7.org/CodeSystem/v2-0136" />
+              <code value="Y" />
+              <display value="Yes" />
+            </valueCoding>
+          </extension>
+          <line value="433 Johnson Creek" />
+          <city value="Acton" />
+          <district value="Middlesex" />
+          <state value="MA" />
+          <country value="United States" />
+        </address>
+        <maritalStatus>
+          <coding>
+            <system value="http://terminology.hl7.org/CodeSystem/v3-MaritalStatus" />
+            <code value="M" />
+            <display value="Married" />
+          </coding>
+        </maritalStatus>
+      </Patient>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:b9ccb74d-1eb0-4203-81a4-1692e5556739" />
+    <resource>
+      <Practitioner>
+        <id value="b9ccb74d-1eb0-4203-81a4-1692e5556739" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Certifier" />
+        </meta>
+        <identifier>
+          <system value="http://hl7.org/fhir/sid/us-npi" />
+          <value value="611675" />
+        </identifier>
+        <name>
+          <use value="official" />
+          <family value="Emmerich" />
+          <given value="Sheri" />
+          <given value="Jeanette" />
+          <suffix value="MD" />
+        </name>
+        <address>
+          <line value="994 Bauch Green" />
+          <city value="Uxbridge" />
+          <district value="Worcester" />
+          <state value="MA" />
+          <country value="United States" />
+        </address>
+        <qualification>
+          <identifier>
+            <value value="88171" />
+          </identifier>
+        </qualification>
+      </Practitioner>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:22169b41-f2a6-42a3-babb-530411e767dc" />
+    <resource>
+      <Practitioner>
+        <id value="22169b41-f2a6-42a3-babb-530411e767dc" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Death-Pronouncement-Performer" />
+        </meta>
+        <identifier>
+          <system value="http://hl7.org/fhir/sid/us-npi" />
+          <value value="358111" />
+        </identifier>
+        <name>
+          <use value="official" />
+          <family value="Parisian" />
+          <given value="Olga" />
+          <given value="Catherine" />
+          <suffix value="PhD" />
+        </name>
+      </Practitioner>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:a7538022-45fc-49f9-95a6-129031e94b0d" />
+    <resource>
+      <Practitioner>
+        <id value="a7538022-45fc-49f9-95a6-129031e94b0d" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Mortician" />
+        </meta>
+        <identifier>
+          <system value="http://hl7.org/fhir/sid/us-npi" />
+          <value value="384118" />
+        </identifier>
+        <name>
+          <use value="official" />
+          <family value="Ziemann" />
+          <given value="Kristen" />
+          <given value="Erin" />
+          <suffix value="PhD" />
+        </name>
+      </Practitioner>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:6835a5f7-2ada-40f7-ba48-163930025e7b" />
+    <resource>
+      <Procedure>
+        <id value="6835a5f7-2ada-40f7-ba48-163930025e7b" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Death-Certification" />
+        </meta>
+        <identifier>
+          <value value="153493" />
+        </identifier>
+        <status value="completed" />
+        <category>
+          <coding>
+            <system value="http://snomed.info/sct" />
+            <code value="103693007" />
+            <display value="Diagnostic procedure" />
+          </coding>
+        </category>
+        <code>
+          <coding>
+            <system value="http://snomed.info/sct" />
+            <code value="308646001" />
+            <display value="Death certification" />
+          </coding>
+        </code>
+        <subject>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </subject>
+        <performedDateTime value="2021-07-08T03:28:29" />
+        <performer>
+          <function>
+            <coding>
+              <system value="http://snomed.info/sct" />
+              <code value="434641000124105" />
+              <display value="Death certification and verification by physician" />
+            </coding>
+          </function>
+          <actor>
+            <reference value="urn:uuid:b9ccb74d-1eb0-4203-81a4-1692e5556739" />
+          </actor>
+        </performer>
+      </Procedure>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:d5f24615-f1ef-4a49-9225-9d66b5e9cdfb" />
+    <resource>
+      <Organization>
+        <id value="d5f24615-f1ef-4a49-9225-9d66b5e9cdfb" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Interested-Party" />
+        </meta>
+        <identifier>
+          <system value="http://hl7.org/fhir/sid/us-npi" />
+          <value value="616235" />
+        </identifier>
+        <active value="true" />
+        <type>
+          <coding>
+            <system value="http://terminology.hl7.org/CodeSystem/organization-type" />
+            <code value="prov" />
+            <display value="Healthcare Provider" />
+          </coding>
+        </type>
+        <name value="Hauck LLC" />
+        <address>
+          <line value="367 Norbert Shore" />
+          <city value="Woodland" />
+          <district value="Middlesex" />
+          <state value="MA" />
+          <country value="United States" />
+        </address>
+      </Organization>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:36b992f7-5abf-40e3-a288-f07f6fb384aa" />
+    <resource>
+      <Organization>
+        <id value="36b992f7-5abf-40e3-a288-f07f6fb384aa" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Funeral-Home" />
+        </meta>
+        <active value="true" />
+        <type>
+          <coding>
+            <system value="http://terminology.hl7.org/CodeSystem/organization-type" />
+            <code value="bus" />
+            <display value="Non-Healthcare Business or Corporation" />
+          </coding>
+        </type>
+        <name value="Heaney Funeral Home" />
+        <address>
+          <line value="611 Hane Harbor" />
+          <city value="Woburn Highlands" />
+          <district value="Middlesex" />
+          <state value="MA" />
+          <country value="United States" />
+        </address>
+      </Organization>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:485cb0f4-9fc8-49c2-af50-6627224aec11" />
+    <resource>
+      <PractitionerRole>
+        <id value="485cb0f4-9fc8-49c2-af50-6627224aec11" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Funeral-Service-Licensee" />
+        </meta>
+        <practitioner>
+          <reference value="urn:uuid:a7538022-45fc-49f9-95a6-129031e94b0d" />
+        </practitioner>
+        <organization>
+          <reference value="urn:uuid:36b992f7-5abf-40e3-a288-f07f6fb384aa" />
+        </organization>
+        <telecom>
+          <system value="phone" />
+          <value value="1-909-876-4599" />
+        </telecom>
+      </PractitionerRole>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:51e431d2-3051-4306-bb2c-d753b37a94d1" />
+    <resource>
+      <List>
+        <id value="51e431d2-3051-4306-bb2c-d753b37a94d1" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Cause-of-Death-Pathway" />
+        </meta>
+        <status value="current" />
+        <mode value="snapshot" />
+        <source>
+          <reference value="urn:uuid:b9ccb74d-1eb0-4203-81a4-1692e5556739" />
+        </source>
+        <orderedBy>
+          <coding>
+            <system value="http://terminology.hl7.org/CodeSystem/list-order" />
+            <code value="priority" />
+            <display value="Sorted by Priority" />
+          </coding>
+        </orderedBy>
+        <entry>
+          <item>
+            <reference value="urn:uuid:37b868a8-37a7-4243-88e0-f4d3ffb1c2a9" />
+          </item>
+        </entry>
+        <entry>
+          <item>
+            <reference value="urn:uuid:a82b5e7e-4b02-4bfe-9d01-ffd4ffeb6b74" />
+          </item>
+        </entry>
+        <entry>
+          <item>
+            <reference value="urn:uuid:36fbe2d7-3395-4b88-94f9-acd1ba8c6293" />
+          </item>
+        </entry>
+      </List>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:e0fc5edd-d8b9-4bdc-8c7a-b0de47e25ac4" />
+    <resource>
+      <Location>
+        <id value="e0fc5edd-d8b9-4bdc-8c7a-b0de47e25ac4" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Disposition-Location" />
+        </meta>
+        <name value="Turcotte Cemetery" />
+        <address>
+          <city value="South Peabody" />
+          <district value="Essex" />
+          <state value="MA" />
+          <country value="United States" />
+        </address>
+        <physicalType>
+          <coding>
+            <system value="http://terminology.hl7.org/CodeSystem/location-physical-type" />
+            <code value="si" />
+            <display value="Site" />
+          </coding>
+        </physicalType>
+      </Location>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:623587da-b763-4ba2-8c66-344199b46a93" />
+    <resource>
+      <DocumentReference>
+        <id value="623587da-b763-4ba2-8c66-344199b46a93" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Death-Certificate-Reference" />
+        </meta>
+        <identifier>
+          <value value="705566" />
+        </identifier>
+        <status value="current" />
+        <type>
+          <coding>
+            <system value="http://loinc.org" />
+            <code value="64297-5" />
+            <display value="Death certificate" />
+          </coding>
+        </type>
+        <date value="2021-07-08T20:49:48.2210942+00:00" />
+        <author>
+          <reference value="urn:uuid:d5f24615-f1ef-4a49-9225-9d66b5e9cdfb" />
+        </author>
+        <content>
+          <attachment>
+            <url value="urn:uuid:3b225371-704a-4a72-8e26-78de1ffa328c" />
+          </attachment>
+        </content>
+      </DocumentReference>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:d2131591-fd3a-4782-8ad4-673f3d926ee0" />
+    <resource>
+      <RelatedPerson>
+        <id value="d2131591-fd3a-4782-8ad4-673f3d926ee0" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Decedent-Father" />
+        </meta>
+        <patient>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </patient>
+        <relationship>
+          <coding>
+            <system value="http://terminology.hl7.org/CodeSystem/v3-RoleCode" />
+            <code value="FTH" />
+            <display value="father" />
+          </coding>
+        </relationship>
+        <name>
+          <family value="Ortiz" />
+          <given value="Randal" />
+          <given value="Jeremiah" />
+          <suffix value="MD" />
+        </name>
+      </RelatedPerson>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:801e470e-88a9-4ac7-807a-9038c7ed057d" />
+    <resource>
+      <RelatedPerson>
+        <id value="801e470e-88a9-4ac7-807a-9038c7ed057d" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Decedent-Mother" />
+        </meta>
+        <patient>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </patient>
+        <relationship>
+          <coding>
+            <system value="http://terminology.hl7.org/CodeSystem/v3-RoleCode" />
+            <code value="MTH" />
+            <display value="mother" />
+          </coding>
+        </relationship>
+        <name>
+          <family value="Mohr" />
+          <given value="Becky" />
+          <given value="Angela" />
+          <suffix value="DDS" />
+        </name>
+      </RelatedPerson>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:f1929ce5-6d8d-49b3-80fd-721d3d015257" />
+    <resource>
+      <RelatedPerson>
+        <id value="f1929ce5-6d8d-49b3-80fd-721d3d015257" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Decedent-Spouse" />
+        </meta>
+        <patient>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </patient>
+        <relationship>
+          <coding>
+            <system value="http://terminology.hl7.org/CodeSystem/v3-RoleCode" />
+            <code value="SPS" />
+            <display value="spouse" />
+          </coding>
+        </relationship>
+        <name>
+          <family value="Ortiz" />
+          <given value="Hosea" />
+          <given value="Hellen" />
+          <suffix value="V" />
+        </name>
+      </RelatedPerson>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:4942054a-97b6-4745-87fb-cb57fbda83db" />
+    <resource>
+      <Observation>
+        <id value="4942054a-97b6-4745-87fb-cb57fbda83db" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-BirthRecordIdentifier" />
+        </meta>
+        <status value="final" />
+        <code>
+          <coding>
+            <system value="http://terminology.hl7.org/CodeSystem/v2-0203" />
+            <code value="BR" />
+            <display value="Birth registry number" />
+          </coding>
+        </code>
+        <subject>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </subject>
+        <valueString value="587896" />
+      </Observation>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:8b94ac33-ad77-49ae-b729-54e790169879" />
+    <resource>
+      <Observation>
+        <id value="8b94ac33-ad77-49ae-b729-54e790169879" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Death-Date" />
+        </meta>
+        <extension url="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Observation-Location">
+          <valueReference>
+            <reference value="urn:uuid:cebb30c2-bebc-401c-9867-0f667a0c95f7" />
+          </valueReference>
+        </extension>
+        <status value="final" />
+        <code>
+          <coding>
+            <system value="http://loinc.org" />
+            <code value="81956-5" />
+            <display value="Date+time of death" />
+          </coding>
+        </code>
+        <subject>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </subject>
+        <effectiveDateTime value="2021-07-08T00:00:00.0000000+00:00" />
+        <performer>
+          <reference value="urn:uuid:22169b41-f2a6-42a3-babb-530411e767dc" />
+        </performer>
+        <valueDateTime value="2021-07-08T00:00:00.0000000+00:00" />
+        <component>
+          <code>
+            <coding>
+              <system value="http://loinc.org" />
+              <code value="80616-6" />
+              <display value="Date and time pronounced dead [US Standard Certificate of Death]" />
+            </coding>
+          </code>
+          <valueDateTime value="2021-07-08T01:00:00.0000000+00:00" />
+        </component>
+      </Observation>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:aeb4d366-e7f0-4231-adad-1ed3b16903be" />
+    <resource>
+      <Observation>
+        <id value="aeb4d366-e7f0-4231-adad-1ed3b16903be" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Decedent-Age" />
+        </meta>
+        <status value="final" />
+        <code>
+          <coding>
+            <system value="http://loinc.org" />
+            <code value="30525-0" />
+            <display value="Age" />
+          </coding>
+        </code>
+        <subject>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </subject>
+        <effectiveDateTime value="2021-07-08" />
+        <valueQuantity>
+          <value value="136" />
+          <unit value="a" />
+        </valueQuantity>
+      </Observation>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:cebb30c2-bebc-401c-9867-0f667a0c95f7" />
+    <resource>
+      <Location>
+        <id value="cebb30c2-bebc-401c-9867-0f667a0c95f7" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Death-Location" />
+        </meta>
+        <extension url="http://hl7.org/fhir/us/vrdr/StructureDefinition/Location-Jurisdiction-Id">
+          <valueCodeableConcept>
+            <text value="MA" />
+          </valueCodeableConcept>
+        </extension>
+        <name value="Maplewood Hospital" />
+        <type>
+          <coding>
+            <system value="http://snomed.info/sct" />
+            <code value="16983000" />
+            <display value="Death in hospital" />
+          </coding>
+        </type>
+        <address>
+          <line value="5 Fern Land" />
+          <city value="Maplewood" />
+          <district value="Middlesex" />
+          <state value="MA" />
+          <country value="United States" />
+        </address>
+      </Location>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:28765404-db43-4100-99ee-4695f1954a05" />
+    <resource>
+      <Observation>
+        <id value="28765404-db43-4100-99ee-4695f1954a05" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Decedent-Education-Level" />
+        </meta>
+        <status value="final" />
+        <code>
+          <coding>
+            <system value="http://loinc.org" />
+            <code value="80913-7" />
+            <display value="Highest level of education [US Standard Certificate of Death]" />
+          </coding>
+        </code>
+        <subject>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </subject>
+        <valueCodeableConcept>
+          <coding>
+            <system value="http://terminology.hl7.org/CodeSystem/v3-EducationLevel" />
+            <code value="GD" />
+            <display value="Graduate or professional Degree complete" />
+          </coding>
+        </valueCodeableConcept>
+      </Observation>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:1313309e-d8aa-415c-8985-798c1a3b3612" />
+    <resource>
+      <Observation>
+        <id value="1313309e-d8aa-415c-8985-798c1a3b3612" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Decedent-Usual-Work" />
+        </meta>
+        <status value="final" />
+        <code>
+          <coding>
+            <system value="http://loinc.org" />
+            <code value="21843-8" />
+            <display value="History of Usual occupation" />
+          </coding>
+        </code>
+        <subject>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </subject>
+        <effectivePeriod>
+          <end value="2006-02-15" />
+        </effectivePeriod>
+        <valueCodeableConcept>
+          <text value="Programmer" />
+        </valueCodeableConcept>
+        <component>
+          <code>
+            <coding>
+              <system value="http://loinc.org" />
+              <code value="21844-6" />
+              <display value="History of Usual industry" />
+            </coding>
+          </code>
+          <valueCodeableConcept>
+            <text value="Health Insurance" />
+          </valueCodeableConcept>
+        </component>
+      </Observation>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:85c43cf8-2f72-460a-ae69-038d048ed465" />
+    <resource>
+      <Observation>
+        <id value="85c43cf8-2f72-460a-ae69-038d048ed465" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Decedent-Military-Service" />
+        </meta>
+        <status value="final" />
+        <code>
+          <coding>
+            <system value="http://loinc.org" />
+            <code value="55280-2" />
+            <display value="Military service Narrative" />
+          </coding>
+        </code>
+        <subject>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </subject>
+        <valueCodeableConcept>
+          <coding>
+            <system value="http://terminology.hl7.org/CodeSystem/v2-0136" />
+            <code value="Y" />
+            <display value="Yes" />
+          </coding>
+        </valueCodeableConcept>
+      </Observation>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:a46b8bc2-9ed3-41d3-9f82-44e3ec438c8a" />
+    <resource>
+      <Observation>
+        <id value="a46b8bc2-9ed3-41d3-9f82-44e3ec438c8a" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Decedent-Disposition-Method" />
+        </meta>
+        <extension url="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Observation-Location">
+          <valueReference>
+            <reference value="urn:uuid:e0fc5edd-d8b9-4bdc-8c7a-b0de47e25ac4" />
+          </valueReference>
+        </extension>
+        <status value="final" />
+        <code>
+          <coding>
+            <system value="http://loinc.org" />
+            <code value="80905-3" />
+            <display value="Body disposition method" />
+          </coding>
+        </code>
+        <subject>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </subject>
+        <performer>
+          <reference value="urn:uuid:a7538022-45fc-49f9-95a6-129031e94b0d" />
+        </performer>
+        <valueCodeableConcept>
+          <coding>
+            <system value="http://snomed.info/sct" />
+            <code value="449971000124106" />
+            <display value="Patient status determination, deceased and buried" />
+          </coding>
+        </valueCodeableConcept>
+      </Observation>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:65bb83b5-16c8-4bd0-8deb-3f167ffd22ec" />
+    <resource>
+      <Observation>
+        <id value="65bb83b5-16c8-4bd0-8deb-3f167ffd22ec" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Manner-of-Death" />
+        </meta>
+        <status value="final" />
+        <code>
+          <coding>
+            <system value="http://loinc.org" />
+            <code value="69449-7" />
+            <display value="Manner of death" />
+          </coding>
+        </code>
+        <subject>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </subject>
+        <performer>
+          <reference value="urn:uuid:b9ccb74d-1eb0-4203-81a4-1692e5556739" />
+        </performer>
+        <valueCodeableConcept>
+          <coding>
+            <system value="http://snomed.info/sct" />
+            <code value="38605008" />
+            <display value="Natural death" />
+          </coding>
+        </valueCodeableConcept>
+      </Observation>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:35d76c44-765e-4277-9a6a-00c0e2456a21" />
+    <resource>
+      <Observation>
+        <id value="35d76c44-765e-4277-9a6a-00c0e2456a21" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-InjuryIncident" />
+        </meta>
+        <status value="final" />
+        <code>
+          <coding>
+            <system value="http://loinc.org" />
+            <code value="11374-6" />
+            <display value="Injury incident description Narrative" />
+          </coding>
+        </code>
+        <subject>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </subject>
+        <component>
+          <code>
+            <coding>
+              <system value="http://loinc.org" />
+              <code value="69448-9" />
+              <display value="Injury leading to death associated with transportation event" />
+            </coding>
+          </code>
+          <valueCodeableConcept>
+            <coding>
+              <system value="http://terminology.hl7.org/CodeSystem/v2-0136" />
+              <code value="N" />
+              <display value="No" />
+            </coding>
+          </valueCodeableConcept>
+        </component>
+      </Observation>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:37b868a8-37a7-4243-88e0-f4d3ffb1c2a9" />
+    <resource>
+      <Condition>
+        <id value="37b868a8-37a7-4243-88e0-f4d3ffb1c2a9" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Cause-Of-Death-Condition" />
+        </meta>
+        <code>
+          <text value="Rupture of left ventricle" />
+        </code>
+        <subject>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </subject>
+        <onsetString value="Minutes" />
+        <asserter>
+          <reference value="urn:uuid:b9ccb74d-1eb0-4203-81a4-1692e5556739" />
+        </asserter>
+      </Condition>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:a82b5e7e-4b02-4bfe-9d01-ffd4ffeb6b74" />
+    <resource>
+      <Condition>
+        <id value="a82b5e7e-4b02-4bfe-9d01-ffd4ffeb6b74" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Cause-Of-Death-Condition" />
+        </meta>
+        <code>
+          <text value="Myocardial infarction" />
+        </code>
+        <subject>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </subject>
+        <onsetString value="2 Days" />
+        <asserter>
+          <reference value="urn:uuid:b9ccb74d-1eb0-4203-81a4-1692e5556739" />
+        </asserter>
+      </Condition>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:36fbe2d7-3395-4b88-94f9-acd1ba8c6293" />
+    <resource>
+      <Condition>
+        <id value="36fbe2d7-3395-4b88-94f9-acd1ba8c6293" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Cause-Of-Death-Condition" />
+        </meta>
+        <code>
+          <text value="Coronary atherosclerosis" />
+        </code>
+        <subject>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </subject>
+        <onsetString value="2 Years" />
+        <asserter>
+          <reference value="urn:uuid:b9ccb74d-1eb0-4203-81a4-1692e5556739" />
+        </asserter>
+      </Condition>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:63f97c27-7c28-4e02-b622-3d1e66a15f6f" />
+    <resource>
+      <Condition>
+        <id value="63f97c27-7c28-4e02-b622-3d1e66a15f6f" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Condition-Contributing-To-Death" />
+        </meta>
+        <code>
+          <text value="Non-insulin-dependent diabetes mellitus, Cigarette smoking, Hypertension, Hypercholesterolemia, Coronary bypass surgery" />
+        </code>
+        <subject>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </subject>
+        <asserter>
+          <reference value="urn:uuid:b9ccb74d-1eb0-4203-81a4-1692e5556739" />
+        </asserter>
+      </Condition>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:e59f50bb-1490-4441-8a00-7dd139c9c11d" />
+    <resource>
+      <Observation>
+        <id value="e59f50bb-1490-4441-8a00-7dd139c9c11d" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Autopsy-Performed-Indicator" />
+        </meta>
+        <status value="final" />
+        <code>
+          <coding>
+            <system value="http://loinc.org" />
+            <code value="85699-7" />
+            <display value="Autopsy was performed" />
+          </coding>
+        </code>
+        <subject>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </subject>
+        <valueCodeableConcept>
+          <coding>
+            <system value="http://terminology.hl7.org/CodeSystem/v2-0136" />
+            <code value="Y" />
+            <display value="Yes" />
+          </coding>
+        </valueCodeableConcept>
+        <component>
+          <code>
+            <coding>
+              <system value="http://loinc.org" />
+              <code value="69436-4" />
+              <display value="Autopsy results available" />
+            </coding>
+          </code>
+          <valueCodeableConcept>
+            <coding>
+              <system value="http://terminology.hl7.org/CodeSystem/v2-0136" />
+              <code value="Y" />
+              <display value="Yes" />
+            </coding>
+          </valueCodeableConcept>
+        </component>
+      </Observation>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:b6cec16b-c0ee-498f-8572-088c8d1ba074" />
+    <resource>
+      <Observation>
+        <id value="b6cec16b-c0ee-498f-8572-088c8d1ba074" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Examiner-Contacted" />
+        </meta>
+        <status value="final" />
+        <code>
+          <coding>
+            <system value="http://loinc.org" />
+            <code value="74497-9" />
+            <display value="Medical examiner or coroner was contacted [US Standard Certificate of Death]" />
+          </coding>
+        </code>
+        <subject>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </subject>
+        <valueCodeableConcept>
+          <coding>
+            <system value="http://terminology.hl7.org/CodeSystem/v2-0136" />
+            <code value="Y" />
+            <display value="Yes" />
+          </coding>
+        </valueCodeableConcept>
+      </Observation>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:86a46a90-66c4-4894-a16d-4f5a222de2ae" />
+    <resource>
+      <Observation>
+        <id value="86a46a90-66c4-4894-a16d-4f5a222de2ae" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Tobacco-Use-Contributed-To-Death" />
+        </meta>
+        <status value="final" />
+        <code>
+          <coding>
+            <system value="http://loinc.org" />
+            <code value="69443-0" />
+            <display value="Did tobacco use contribute to death" />
+          </coding>
+        </code>
+        <subject>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </subject>
+        <valueCodeableConcept>
+          <coding>
+            <system value="http://snomed.info/sct" />
+            <code value="373066001" />
+            <display value="Yes" />
+          </coding>
+        </valueCodeableConcept>
+      </Observation>
+    </resource>
+  </entry>
+  <entry>
+    <fullUrl value="urn:uuid:e70a9fa5-9d0a-43c0-9db4-e94b9fb890c4" />
+    <resource>
+      <Observation>
+        <id value="e70a9fa5-9d0a-43c0-9db4-e94b9fb890c4" />
+        <meta>
+          <profile value="http://hl7.org/fhir/us/vrdr/StructureDefinition/VRDR-Decedent-Pregnancy" />
+        </meta>
+        <status value="final" />
+        <code>
+          <coding>
+            <system value="http://loinc.org" />
+            <code value="69442-2" />
+            <display value="Timing of recent pregnancy in relation to death" />
+          </coding>
+        </code>
+        <subject>
+          <reference value="urn:uuid:6740a776-2027-4911-9bbb-614f21aeddff" />
+        </subject>
+        <valueCodeableConcept>
+          <coding>
+            <system value="http://terminology.hl7.org/CodeSystem/v3-NullFlavor" />
+            <code value="NA" />
+            <display value="not applicable" />
+          </coding>
+        </valueCodeableConcept>
+      </Observation>
+    </resource>
+  </entry>
+</Bundle>
