@@ -1,17 +1,27 @@
 using System;
+using System.Text;
+using System.Threading.Tasks;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json.Linq;
+using VRDR;
+using RestSharp;
 using NVSSClient.Services;
 
 namespace NVSSClient
 {
     class Program{
-
-        private static String apiUrl = "https://localhost:5001/bundles";
         private static String token = "";
-        public static void Main(string[] args)
-            => CreateHostBuilder(args).Build().Run();
+        public static void Main(string[] args) 
+        {
+            CreateHostBuilder(args).Build().Run();
+        }
+        
 
         // EF Core uses this method at design time to access the DbContext   
         public static IHostBuilder CreateHostBuilder(string[] args) =>
@@ -25,61 +35,77 @@ namespace NVSSClient
                     services.AddHostedService<TimedHostedService>();
                 });
         
+        public IConfiguration Configuration { get; }
         static HttpClient client = new HttpClient();
         public static String GetAuthorizeToken()
         {
-            var client = new RestClient("https://YOUR_DOMAIN/oauth/token");
+            
+            String authUrl = Startup.StaticConfig.GetConnectionString("AuthServer");
+            var rclient = new RestClient(authUrl);
             var request = new RestRequest(Method.POST);
+
+            string clientId = Startup.StaticConfig.GetValue<string>("Authentication:ClientId");
+            string clientSecret = Startup.StaticConfig.GetValue<string>("Authentication:ClientSecret");
+            string username = Startup.StaticConfig.GetValue<string>("Authentication:Username");
+            string pass = Startup.StaticConfig.GetValue<string>("Authentication:Password");
+            String paramString = String.Format("grant_type=password&client_id={0}&client_secret={1}&username={2}&password={3}", clientId, clientSecret, username, pass);
             request.AddHeader("content-type", "application/x-www-form-urlencoded");
-            request.AddParameter("application/x-www-form-urlencoded", "grant_type=client_credentials&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET&audience=YOUR_API_IDENTIFIER", ParameterType.RequestBody);
-            IRestResponse response = client.Execute(request);
-            if (response.IsSuccessStatusCode)
+            request.AddParameter("application/x-www-form-urlencoded", paramString, ParameterType.RequestBody);
+            
+            IRestResponse response = rclient.Execute(request);
+            string content = response.Content;
+            if (!String.IsNullOrEmpty(content))
             {
                 //read response 
-                JObject json = JObject.Parse(response);
-                token = json["access_token"];
-                return token;
+                JObject json = JObject.Parse(content);
+                if (json["access_token"] != null)
+                {
+                    String newtoken = json["access_token"].ToString();
+                    return newtoken;
+                }
+                
             }
             return "";
         }
 
-        // Makes a GET request to the API server for any new messages
-        public static async Task<String> GetMessageResponsesAsync(DateTime lastUpdated, String authToken)
+        // GET request to the API server for any new messages
+        public static String GetMessageResponsesAsync(String lastUpdated)
         {
-            // Capture the time just before we make the request
-            //String nextUpdated = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
-            
-            // retrieve new messages
-            // TODO add auth token
-            string authorization = authToken;
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authorization);
-
+            string apiUrl = Startup.StaticConfig.GetConnectionString("ApiServer");
             var address = apiUrl;
             Console.WriteLine($"Get messages since: {lastUpdated}");
-            if (!string.IsNullOrWhiteSpace(lastUpdated)){
+
+            if (String.IsNullOrEmpty(token))
+            {
+                token = GetAuthorizeToken();
+            }
+            string authorization = token;
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authorization);
+
+
+            if (lastUpdated != null){
                 address = apiUrl + "?lastUpdated=" + lastUpdated;
             }
-            var content = client.GetStringAsync(address).Result;
+            var response = client.GetAsync(address).Result;
             
-            if (content.IsSuccessStatusCode)
+            if (response.IsSuccessStatusCode)
             {
+                var content = response.Content.ReadAsStringAsync().Result;
+                Console.WriteLine(content);
                 return content;
-            } 
-            else if (content.HttpStatusCode == 401)
-            {
-                // unauthorized, refresh token
             }
-            // TODO move this to where we make the call
-            //parseBundle(content);
+            else
+            {
+                Console.WriteLine(response.StatusCode);
+                return "";
+            }
 
-            // update the time
-            //lastUpdated = nextUpdated;
         }
 
         // POSTS a message to the API server
-        public static async Task<HttpStatusCode> PostMessageAsync(BaseMessage message, String authToken)
+        public static Boolean PostMessageAsync(BaseMessage message)
         {
-            
+            string apiUrl = Startup.StaticConfig.GetConnectionString("ApiServer");
             var json = message.ToJSON();
 
             var data = new StringContent(json, Encoding.UTF8, "application/json");
@@ -87,7 +113,11 @@ namespace NVSSClient
             using var client = new HttpClient();
 
             // TODO add auth token
-            string authorization = authToken;
+            if (String.IsNullOrEmpty(token))
+            {
+                token = GetAuthorizeToken();
+            }
+            string authorization = token;
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authorization);
 
             var response = client.PostAsync(apiUrl, data).Result;
@@ -96,9 +126,10 @@ namespace NVSSClient
                 Console.WriteLine($"Successfully submitted {message.MessageId}");
                 return true;
             }
-            else if (response.HttpStatusCode == 401)
+            else if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
                 // unauthorized, refresh token
+                return false;
             }
             else
             {
