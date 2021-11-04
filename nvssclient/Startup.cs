@@ -14,9 +14,11 @@ namespace NVSSClient
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
+            StaticConfig = configuration;
         }
 
         public IConfiguration Configuration { get; }
+        public static IConfiguration StaticConfig {get; private set;}
 
         public void ConfigureServices(IServiceCollection services)
         {

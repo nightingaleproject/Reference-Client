@@ -100,7 +100,7 @@ namespace NVSSClient.Services
                 foreach (MessageItem item in items)
                 {
                     BaseMessage msg = BaseMessage.Parse(item.Message.ToString(), true);
-                    Boolean success = postMessage(msg);
+                    Boolean success = Program.PostMessageAsync(msg);
                     if (success)
                     {
                         item.Status = Models.MessageStatus.Sent;          
@@ -131,7 +131,7 @@ namespace NVSSClient.Services
                 foreach (MessageItem item in items)
                 {
                     BaseMessage msg = BaseMessage.Parse(item.Message.ToString(), true);
-                    Boolean success = postMessage(msg);
+                    Boolean success = Program.PostMessageAsync(msg);
                     if (success)
                     {
                         item.Status = Models.MessageStatus.Sent;
@@ -152,40 +152,13 @@ namespace NVSSClient.Services
         {
             // Capture the time just before we make the request
             String nextUpdated = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
-            
-            // retrieve new messages
-            var address = apiUrl;
-            Console.WriteLine($"Get messages since: {lastUpdated}");
-            if (!string.IsNullOrWhiteSpace(lastUpdated)){
-                address = apiUrl + "?lastUpdated=" + lastUpdated;
+            var content = Program.GetMessageResponsesAsync(lastUpdated);
+            if (String.IsNullOrEmpty(content))
+            {
+                parseBundle(content);
             }
-            var content = client.GetStringAsync(address).Result;
-            
-            parseBundle(content);
-
             // update the time
             lastUpdated = nextUpdated;
-        }
-
-        // Post the message to the NCHS API
-        public Boolean postMessage(BaseMessage message)
-        {
-            
-            var json = message.ToJSON();
-
-            var data = new StringContent(json, Encoding.UTF8, "application/json");
-
-            using var client = new HttpClient();
-
-            var response = client.PostAsync(apiUrl, data).Result;
-            if (response.IsSuccessStatusCode){
-                Console.WriteLine($"Successfully submitted {message.MessageId}");
-                return true;
-            }
-            else {
-                Console.WriteLine($"Error submitting {message.MessageId}");
-                return false;
-            }
         }
 
         // parses the bundle of bundles from nchs and processes each message response
