@@ -7,8 +7,15 @@
         }
     },
     "ConnectionStrings": {
-        "ClientDatabase": "Host=localhost;Username=postgres;Password=mypassword;Database=postgres;",
-        "ApiServer": "https://localhost:5001/bundles"
+        "ClientDatabase": "Host=localhost;Username=postgres;Password=mysecretpassword;Database=postgres;",
+        "AuthServer": "https://<authtoken-url>",
+        "ApiServer": "https://<bundles-endpoint-url>"
+    },
+    "Authentication": {
+        "ClientId": "theclientid",
+        "ClientSecret": "theclientsecret",
+        "Username":"user",
+        "Password":"password"
     },
     "ResendInterval" : 30,
     "PollingInterval" : 10
