@@ -71,17 +71,27 @@ namespace NVSSClient
         // GET request to the API server for any new messages
         public static String GetMessageResponsesAsync(String lastUpdated)
         {
+            
             string apiUrl = Startup.StaticConfig.GetConnectionString("ApiServer");
+
+            // check if testing locally
+            Boolean localDev = Startup.StaticConfig.GetValue<Boolean>("LocalTesting");
+            if (localDev) {
+                apiUrl = Startup.StaticConfig.GetConnectionString("LocalServer");
+            }
+            
             var address = apiUrl;
             Console.WriteLine($"Get messages since: {lastUpdated}");
 
-            if (String.IsNullOrEmpty(token))
-            {
-                token = GetAuthorizeToken();
+            // if not testing locally, add auth
+            if (!localDev){
+                if (String.IsNullOrEmpty(token))
+                {
+                    token = GetAuthorizeToken();
+                }
+                string authorization = token;
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authorization);
             }
-            string authorization = token;
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authorization);
-
 
             if (lastUpdated != null){
                 address = apiUrl + "?lastUpdated=" + lastUpdated;
@@ -106,19 +116,28 @@ namespace NVSSClient
         public static Boolean PostMessageAsync(BaseMessage message)
         {
             string apiUrl = Startup.StaticConfig.GetConnectionString("ApiServer");
+
+            // check if testing locally
+            Boolean localDev = Startup.StaticConfig.GetValue<Boolean>("LocalTesting");
+            if (localDev) {
+                apiUrl = Startup.StaticConfig.GetConnectionString("LocalServer");
+            }
+
             var json = message.ToJSON();
 
             var data = new StringContent(json, Encoding.UTF8, "application/json");
 
             using var client = new HttpClient();
 
-            // TODO add auth token
-            if (String.IsNullOrEmpty(token))
-            {
-                token = GetAuthorizeToken();
+            // if not testing locally, add auth
+            if (!localDev){
+                if (String.IsNullOrEmpty(token))
+                {
+                    token = GetAuthorizeToken();
+                }
+                string authorization = token;
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authorization);
             }
-            string authorization = token;
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authorization);
 
             var response = client.PostAsync(apiUrl, data).Result;
             if (response.IsSuccessStatusCode)
