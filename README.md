@@ -1,14 +1,14 @@
 # Reference Client API
-A reference client implementation for jurisdications that handles submitting VRDR FHIR Messages to an NVSS API server, reliable delivery (acknowledgements and retries), and message responses. The implementation follows the [FHIR Messaging IG](http://build.fhir.org/ig/nightingaleproject/vital_records_fhir_messaging_ig/branches/main/message.html). The client leverages the vrdr-dotnet library to create and parse FHIR Messages.
+The Reference Client API is an example implementation for jurisdications that handles submitting VRDR FHIR Messages to an NVSS API server, reliable delivery (acknowledgements and retries), and message responses. The implementation follows the [FHIR Messaging IG](http://build.fhir.org/ig/nightingaleproject/vital_records_fhir_messaging_ig/branches/main/message.html). The client leverages the [vrdr-dotnet](https://github.com/nightingaleproject/vrdr-dotnet) library to create and parse FHIR Messages.
 
 # Use Cases
-This client can be used to test and demo sending messages to the NVSS API Server using the FHIR Messaging IG format. It can also be used a reference for jurisdictions building their own client implementation.
+This client can be used to test and demo sending messages to the NVSS API Server using the FHIR Messaging IG format. It can also be used as reference for jurisdictions building their own client implementation.
 
 ## Architecture Diagram 
 <img src="resources/architecture.png" alt="drawing" width="750"/>  
 
 ### Architecture Description
-The VRDR reporter sends a JSON vrdr record via POST to the client's `/messages` endpoint. Upon receival, the client converts the json to a VRDR record, wraps it in a FHIR Message and inserts it in the database MessageItem table. The client's TimedService pulls new messages from the MessageItem table every X seconds and POSTs the message to NVSS API Server. Next, the TimedService makes a GET request for any new messages from the NVSS API Server. The TimedService parses the response messages and stores them in the ResponseItems table. If there was an acknowledgement or error, it updates the MessageItem table with the new message status. Finally, the TimedService checks for any messages that have not received an acknowledgement in Y seconds and resubmits them. The TimedService runs all of these steps in sequence every X number of seconds. The frequencies of X and Y are configurable. The VRDR reporter sends a GET request to the `/messages` endpoint at any time to get the status of all messages.
+The VRDR reporter sends a JSON vrdr record via `POST` to the client's `/messages` endpoint. Upon receipt, the client converts the json to a VRDR record, wraps it in a FHIR Message and inserts it in the `MessageItem` table. The client's `TimedService` pulls new messages from the `MessageItem` table every X seconds and POSTs the message to NVSS API Server. Next, the `TimedService` makes a `GET` request for any new messages from the NVSS API Server. The `TimedService` parses the response messages and stores them in the `ResponseItems` table. If there was an acknowledgement or error, it updates the `MessageItem` table with the new message status. Finally, the `TimedService` checks for any messages that have not received an acknowledgement in Y seconds and resubmits them. The TimedService runs all of these steps in sequence every X number of seconds. The frequencies of X and Y are configurable. The VRDR reporter sends a `GET` request to the `/messages` endpoint at any time to get the status of all messages.
 
 # API Endpoints
 The client implementation has 2 endpoints
@@ -57,7 +57,7 @@ The client implementation can run with a local development setup where all servi
     ```
 
 ## Migrations
-1. When applying a new migration, update the models to reflect the desired changes. 
+1. When applying a new migration, update the Models to reflect the desired changes. 
 2. Stop and remove the container running the current client db
 3. Run `docker-compose up --build` to recreate the db
    1. You may need to comment out this block in the timed service 
@@ -71,7 +71,7 @@ The client implementation can run with a local development setup where all servi
 5. Run `dotnet ef database update` to update the db schema
 
 # Developer Notes and Justifications
-- To persist data and make it available to the Jurisidction upon request, the full response message is stored in the ResponseItems table, rather than just the ID in a Message Log. The ResponseItem table serves as the Message Log, see FHIR Messaging IG](http://build.fhir.org/ig/nightingaleproject/vital_records_fhir_messaging_ig/branches/main/message.html)
+- To persist data and make it available to the Jurisidction upon request, the full response message is stored in the ResponseItems table, rather than just the ID in a Message Log. The ResponseItem table serves as the Message Log, see [FHIR Messaging IG](http://build.fhir.org/ig/nightingaleproject/vital_records_fhir_messaging_ig/branches/main/message.html)
 - The `POST /message` end point does not return data because the submission and coding process takes to long to provide a synchronous response. The user can request the message status via the `GET /message` endpoint. 
 
 Down the road tasks and questions
