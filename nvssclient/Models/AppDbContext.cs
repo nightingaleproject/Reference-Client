@@ -13,6 +13,7 @@ namespace NVSSClient.Models
         { }
         public DbSet<ResponseItem> ResponseItems { get; set; }
         public DbSet<MessageItem> MessageItems { get; set; }
+        public DbSet<Info> Info { get; set; }
 
         public override int SaveChanges()
         {

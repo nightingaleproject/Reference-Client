@@ -27,10 +27,6 @@ namespace NVSSClient.Services
     // check for responses, resend messages that haven't had a response in x time
     public class TimedHostedService : IHostedService, IDisposable
     {
-        //private readonly AppDbContext _context;
-
-        private static String jurisdictionEndPoint = "https://example.com/jurisdiction/message/endpoint"; // make part of the configuration
-        private static String apiUrl = "https://localhost:5001/bundles";
         private static String lastUpdated = new DateTime().ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
         static readonly HttpClient client = new HttpClient();
 
@@ -44,6 +40,17 @@ namespace NVSSClient.Services
             _logger = logger;
             _scopeFactory = scopeFactory;
             Configuration = configuration;
+            
+            // Check for persistent data 
+            using (var scope = _scopeFactory.CreateScope()){
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                Info dbInfo = context.Info.Where(s => s.Name == "lastUpdated").FirstOrDefault();
+                if (dbInfo != null){
+                    DateTime lu = dbInfo.LastUpdated;
+                    lastUpdated = lu.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
+                }
+                Console.WriteLine("LastUpdated: {0}", lastUpdated);
+            }
         }
         public IConfiguration Configuration { get; }
         public System.Threading.Tasks.Task StartAsync(CancellationToken stoppingToken)
@@ -150,15 +157,33 @@ namespace NVSSClient.Services
 
         private void PollForResponses()
         {
-            // Capture the time just before we make the request
-            String nextUpdated = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
+            // Get the datetime now so we don't risk losing any messages, we might get duplicates but we can filter them out
+            DateTime nextUpdated = DateTime.Now;
             var content = Program.GetMessageResponsesAsync(lastUpdated);
             if (String.IsNullOrEmpty(content))
             {
                 parseBundle(content);
             }
-            // update the time
-            lastUpdated = nextUpdated;
+            lastUpdated = nextUpdated.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
+            SaveTimestamp(nextUpdated);
+        }
+
+        // Save the last updated timestamp to persist so we don't get repeat messages on a restart
+        private void SaveTimestamp(DateTime now)
+        {
+            using (var scope = _scopeFactory.CreateScope()){
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                Info dbInfo = context.Info.Where(s => s.Name == "lastUpdated").FirstOrDefault();
+                if (dbInfo == null)
+                {
+                    dbInfo = new Info();
+                    dbInfo.Name = "lastUpdated";
+                }
+                // update the time
+                dbInfo.LastUpdated = now;
+                context.Update(dbInfo);
+                context.SaveChanges();
+            }
         }
 
         // parses the bundle of bundles from nchs and processes each message response
