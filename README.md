@@ -12,11 +12,11 @@ The VRDR reporter sends a JSON vrdr record via `POST` to the client's `/messages
 
 # API Endpoints
 The client implementation has 2 endpoints
-1. `POST /messages` 
-   1. Parameters: The `POST /messages` endpoint accepts a list of VRDR records as json
+1. `POST /message` 
+   1. Parameters: The `POST /message` endpoint accepts a list of VRDR records as json
    2. Function: Wraps each record in a FHIR message and queues the message to be sent to the NVSS API Server
    3. Response: A successful request returns `204 No Content`
-2. `GET /messages`
+2. `GET /message`
    1. Parameters: None
    2. Function: Gets all MessageItems in the client DB
    3. Response: A successful request returns `200 OK` and a JSON list of all MessageItems in the client DB

@@ -66,7 +66,8 @@ namespace NVSSClient.Controllers
                     }
                     
                 }
-            } catch {
+            } catch (Exception e){
+                Console.WriteLine("Error Handling Record: {0}", e);
                 return BadRequest();
             }
 
@@ -78,12 +79,21 @@ namespace NVSSClient.Controllers
         [HttpGet]
         public async Task<ActionResult<List<MessageItem>>> GetMessageStatus()
         {
-            // Return a list of messages and their status
-            using (var scope = _scopeFactory.CreateScope()){
+            try 
+            {            
+                // Return a list of messages and their status
+                using (var scope = _scopeFactory.CreateScope()){
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 var messages = context.MessageItems.ToList();
                 return messages;
+                }
             }
+            catch(Exception e)
+            {
+                Console.WriteLine("Error Retrieving status: {0}", e);
+                return BadRequest();
+            }
+
         }
     }
 }

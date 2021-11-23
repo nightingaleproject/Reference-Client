@@ -160,7 +160,7 @@ namespace NVSSClient.Services
             // Get the datetime now so we don't risk losing any messages, we might get duplicates but we can filter them out
             DateTime nextUpdated = DateTime.Now;
             var content = Program.GetMessageResponsesAsync(lastUpdated);
-            if (String.IsNullOrEmpty(content))
+            if (!String.IsNullOrEmpty(content))
             {
                 parseBundle(content);
             }
