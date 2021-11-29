@@ -43,7 +43,7 @@ namespace NVSSClient.Controllers
                 {
                     // Create a submission message for the record
                     DeathRecord record = new DeathRecord(text.ToString(), true);
-                    var message = new DeathRecordUpdate(record);
+                    var message = new DeathRecordSubmission(record);
                     InsertMessageItem(message);
                 }
             } catch (Exception e){
