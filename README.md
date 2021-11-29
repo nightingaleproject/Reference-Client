@@ -12,11 +12,11 @@ The VRDR reporter sends a JSON vrdr record via `POST` to the client's `/messages
 
 # API Endpoints
 The client implementation has 2 endpoints
-1. `POST /message` 
-   1. Parameters: The `POST /message` endpoint accepts a list of VRDR records as json
+1. `POST /record` 
+   1. Parameters: The `POST /record` endpoint accepts a list of VRDR records as json
    2. Function: Wraps each record in a FHIR message and queues the message to be sent to the NVSS API Server
    3. Response: A successful request returns `204 No Content`
-2. `GET /message`
+2. `GET /record`
    1. Parameters: None
    2. Function: Gets all MessageItems in the client DB
    3. Response: A successful request returns `200 OK` and a JSON list of all MessageItems in the client DB
@@ -72,7 +72,7 @@ The client implementation can run with a local development setup where all servi
 
 # Developer Notes and Justifications
 - To persist data and make it available to the Jurisidction upon request, the full response message is stored in the ResponseItems table, rather than just the ID in a Message Log. The ResponseItem table serves as the Message Log, see [FHIR Messaging IG](http://build.fhir.org/ig/nightingaleproject/vital_records_fhir_messaging_ig/branches/main/message.html)
-- The `POST /message` end point does not return data because the submission and coding process takes to long to provide a synchronous response. The user can request the message status via the `GET /message` endpoint. 
+- The `POST /record` end point does not return data because the submission and coding process takes to long to provide a synchronous response. The user can request the message status via the `GET /record` endpoint. 
 
 Down the road tasks and questions
 - Fix the issue when applying new migrations that requires temporarily commenting out the TimedService

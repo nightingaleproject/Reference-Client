@@ -16,12 +16,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace NVSSClient.tests {
-    public class MessageControllerShould : IClassFixture<CustomWebApplicationFactory<NVSSClient.Startup>>
+    public class RecordControllerShould : IClassFixture<CustomWebApplicationFactory<NVSSClient.Startup>>
     {
         private readonly CustomWebApplicationFactory<NVSSClient.Startup> _factory;
         private readonly HttpClient _client;
     
-        public MessageControllerShould(CustomWebApplicationFactory<NVSSClient.Startup> factory)
+        public RecordControllerShould(CustomWebApplicationFactory<NVSSClient.Startup> factory)
         {
             _factory = factory;
             _client = factory.CreateClient(new WebApplicationFactoryClientOptions{
@@ -32,7 +32,7 @@ namespace NVSSClient.tests {
         [Fact]
         public async Task GetMessageStatus_ReturnsMessages()
         {
-            var response = await _client.GetAsync("/message");
+            var response = await _client.GetAsync("/record");
             response.EnsureSuccessStatusCode();
             var responseString = await response.Content.ReadAsStringAsync();
             //Assert, for now just check it's not empty
@@ -45,7 +45,7 @@ namespace NVSSClient.tests {
         {
             var records = GetTestRecords();
             // Submit that Death Record
-            HttpRequestMessage postRequest = new HttpRequestMessage(HttpMethod.Post, "http://localhost:4300/message");
+            HttpRequestMessage postRequest = new HttpRequestMessage(HttpMethod.Post, "http://localhost:4300/record");
             var json = JsonSerializer.Serialize(records);
             postRequest.Content = new StringContent(json);
             postRequest.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
