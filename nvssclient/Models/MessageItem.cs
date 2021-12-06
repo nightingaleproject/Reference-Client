@@ -24,6 +24,7 @@ namespace NVSSClient.Models
         // [StringLength(50)]  
         // [Column(TypeName = "varchar(50)")]
         public String DeathJurisdictionID { get; set; }
+        public uint? DeathYear {get; set;}
         public String Message {get; set;}
         public int Retries { get; set; }
         public MessageStatus Status { get; set; }   

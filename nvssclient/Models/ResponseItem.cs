@@ -13,6 +13,7 @@ namespace NVSSClient.Models
         // [Column(TypeName = "varchar(50)")]
         public String StateAuxiliaryIdentifier { get; set; }
         public uint? CertificateNumber { get; set; }
+        public uint? DeathYear {get; set;}
         // [StringLength(50)]  
         // [Column(TypeName = "varchar(50)")]
         public String DeathJurisdictionID { get; set; }

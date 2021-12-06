@@ -35,7 +35,7 @@ namespace NVSSClient.Controllers
         // POST: Submission Records
         // Receives a new record to send to the FHIR API
         [HttpPost]
-        [Route("submission")]
+        [Route("list/submission")]
         public async Task<ActionResult> SubmissionRecordHandler([FromBody] List<object> textList)
         {               
             try {
@@ -55,10 +55,31 @@ namespace NVSSClient.Controllers
             return NoContent();
         }
 
+                // POST: Submission Records
+        // Receives a new record to send to the FHIR API
+        [HttpPost]
+        [Route("submission")]
+        public async Task<ActionResult> SubmissionRecordHandler([FromBody] object recordJson)
+        {               
+            try {
+                // Create a submission message for the record
+                DeathRecord record = new DeathRecord(recordJson.ToString(), true);
+                var message = new DeathRecordSubmission(record);
+                InsertMessageItem(message);
+            
+            } catch (Exception e){
+                Console.WriteLine("Error Handling Record: {0}", e);
+                return BadRequest();
+            }
+
+            // return HTTP status code 204 (No Content)
+            return NoContent();
+        }
+
         // POST: Update Records
         // Receives a record update to send to the FHIR API
         [HttpPost]
-        [Route("update")]
+        [Route("list/update")]
         public async Task<ActionResult> UpdateRecordHandler([FromBody] List<object> textList)
         {             
             try {
@@ -78,10 +99,31 @@ namespace NVSSClient.Controllers
             return NoContent();
         }
 
+        // POST: Update Records
+        // Receives a record update to send to the FHIR API
+        [HttpPost]
+        [Route("update")]
+        public async Task<ActionResult> UpdateRecordHandler([FromBody] object recordJson)
+        {             
+            try {
+                // Create a submission message for the record
+                DeathRecord record = new DeathRecord(recordJson.ToString(), true);
+                var message = new DeathRecordUpdate(record);
+                InsertMessageItem(message);
+                
+            } catch (Exception e){
+                Console.WriteLine("Error Handling Record: {0}", e);
+                return BadRequest();
+            }
+
+            // return HTTP status code 204 (No Content)
+            return NoContent();
+        }
+
         // POST: Void Records
         // Receives a record void to send to the FHIR API
         [HttpPost]
-        [Route("void")]
+        [Route("list/void")]
         public async Task<ActionResult> VoidRecordHandler([FromBody] List<object> textList)
         {               
             try {
@@ -101,17 +143,42 @@ namespace NVSSClient.Controllers
             return NoContent();
         }
 
+        // POST: Void Records
+        // Receives a record void to send to the FHIR API
+        [HttpPost]
+        [Route("void")]
+        public async Task<ActionResult> VoidRecordHandler([FromBody] object recordJson)
+        {               
+            try {
+                // Create a submission message for the record
+                DeathRecord record = new DeathRecord(recordJson.ToString(), true);
+                var message = new VoidMessage(record);
+                InsertMessageItem(message);
+            } catch (Exception e){
+                Console.WriteLine("Error Handling Record: {0}", e);
+                return BadRequest();
+            }
+            // return HTTP status code 204 (No Content)
+            return NoContent();
+        }
+
         // GET: Record Status
-        [HttpGet]
-        public async Task<ActionResult<List<MessageItem>>> GetRecordStatus()
+        // TODO should cert number be a 5 digit string vs uint? 
+        [HttpGet("{deathYear}/{jurisdictionId}/{certNo}")]
+        public async Task<ActionResult<MessageItem>> GetRecordStatus(uint deathYear, string jurisdictionId, string certNo)
         {
             try 
             {            
-                // Return a list of messages and their status
+                // Return the most recent message with the given business identifiers and it's status
                 using (var scope = _scopeFactory.CreateScope()){
-                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                var messages = context.MessageItems.ToList();
-                return messages;
+                    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    uint certNoInt = UInt32.Parse(certNo);
+                    var messages = context.MessageItems.Where(s => s.CertificateNumber == certNoInt && s.DeathYear == deathYear && s.DeathJurisdictionID == jurisdictionId).OrderByDescending(s => s.CreatedDate).FirstOrDefault();
+                    if (messages == null) {
+                        Console.WriteLine("Error Retrieving status, no record was found for the provided identifiers.");
+                        return BadRequest();
+                    }
+                    return messages;
                 }
             }
             catch(Exception e)
@@ -127,13 +194,18 @@ namespace NVSSClient.Controllers
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 message.MessageSource = jurisdictionEndPoint;
 
-                // Save it with it's business ids and status info
                 MessageItem item = new MessageItem();
                 item.Uid = message.MessageId;
+                item.Message = message.ToJson().ToString();
+                
+                // Business Identifiers
                 item.StateAuxiliaryIdentifier = message.StateAuxiliaryIdentifier;
                 item.CertificateNumber = message.CertificateNumber;
                 item.DeathJurisdictionID = message.DeathJurisdictionID;
-                item.Message = message.ToJson().ToString();
+                item.DeathYear = message.DeathYear;
+                Console.WriteLine("Business IDs {0}, {1}, {2}", message.DeathYear, message.CertificateNumber, message.DeathJurisdictionID);
+                
+                // Status info
                 item.Status = Models.MessageStatus.Pending;
                 item.Retries = 0;
                 
