@@ -25,7 +25,6 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
-using Moq;
 
 namespace NVSSClient.tests {
     public class TimedServiceShould : IClassFixture<CustomWebApplicationFactory<NVSSClient.Startup>>

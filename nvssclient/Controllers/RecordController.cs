@@ -31,11 +31,16 @@ namespace NVSSClient.Controllers
             _scopeFactory = scopeFactory;
         }
 
+        public class RecordResponse
+        {
+            public MessageItem Message {get; set;}
+            public String Response  {get; set;}
+        }
 
         // POST: Submission Records
         // Receives a new record to send to the FHIR API
         [HttpPost]
-        [Route("list/submission")]
+        [Route("submissions")]
         public async Task<ActionResult> SubmissionRecordHandler([FromBody] List<object> textList)
         {               
             try {
@@ -79,7 +84,7 @@ namespace NVSSClient.Controllers
         // POST: Update Records
         // Receives a record update to send to the FHIR API
         [HttpPost]
-        [Route("list/update")]
+        [Route("updates")]
         public async Task<ActionResult> UpdateRecordHandler([FromBody] List<object> textList)
         {             
             try {
@@ -123,7 +128,7 @@ namespace NVSSClient.Controllers
         // POST: Void Records
         // Receives a record void to send to the FHIR API
         [HttpPost]
-        [Route("list/void")]
+        [Route("voids")]
         public async Task<ActionResult> VoidRecordHandler([FromBody] List<object> textList)
         {               
             try {
@@ -163,9 +168,8 @@ namespace NVSSClient.Controllers
         }
 
         // GET: Record Status
-        // TODO should cert number be a 5 digit string vs uint? 
-        [HttpGet("{deathYear}/{jurisdictionId}/{certNo}")]
-        public async Task<ActionResult<MessageItem>> GetRecordStatus(uint deathYear, string jurisdictionId, string certNo)
+        [HttpGet("status/{deathYear}/{jurisdictionId}/{certNo}")]
+        public async Task<ActionResult<RecordResponse>> GetRecordStatus(uint deathYear, string jurisdictionId, string certNo)
         {
             try 
             {            
@@ -173,12 +177,22 @@ namespace NVSSClient.Controllers
                 using (var scope = _scopeFactory.CreateScope()){
                     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                     uint certNoInt = UInt32.Parse(certNo);
-                    var messages = context.MessageItems.Where(s => s.CertificateNumber == certNoInt && s.DeathYear == deathYear && s.DeathJurisdictionID == jurisdictionId).OrderByDescending(s => s.CreatedDate).FirstOrDefault();
-                    if (messages == null) {
+                    var message = context.MessageItems.Where(s => s.CertificateNumber == certNoInt && s.DeathYear == deathYear && s.DeathJurisdictionID == jurisdictionId).OrderByDescending(s => s.CreatedDate).FirstOrDefault();
+                    if (message == null) {
                         Console.WriteLine("Error Retrieving status, no record was found for the provided identifiers.");
-                        return BadRequest();
+                        return NotFound("Record not found");
                     }
-                    return messages;
+                    
+                    RecordResponse resp = new RecordResponse();
+                    resp.Message = message;
+                    // check if there is a response message
+                    if (message.Status == MessageStatus.Error || message.Status == MessageStatus.AcknowledgedAndCoded)
+                    {
+                        // get the most recent response message
+                        var response = context.ResponseItems.Where(s => s.CertificateNumber == certNoInt && s.DeathYear == deathYear && s.DeathJurisdictionID == jurisdictionId).OrderByDescending(s => s.CreatedDate).FirstOrDefault();
+                        resp.Response = response.Message;
+                    }
+                    return resp;
                 }
             }
             catch(Exception e)

@@ -9,7 +9,8 @@ namespace NVSSClient.Models
         Pending,
         Sent,
         Acknowledged,
-        Error
+        Error,
+        AcknowledgedAndCoded
     }
     public class MessageItem : BaseEntity
     {

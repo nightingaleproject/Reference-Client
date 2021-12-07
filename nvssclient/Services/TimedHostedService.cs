@@ -44,10 +44,10 @@ namespace NVSSClient.Services
             // Check for persistent data 
             using (var scope = _scopeFactory.CreateScope()){
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                Info dbInfo = context.Info.Where(s => s.Name == "lastUpdated").FirstOrDefault();
-                if (dbInfo != null){
-                    DateTime lu = dbInfo.LastUpdated;
-                    lastUpdated = lu.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
+                PersistentState dbState = context.PersistentState.Where(s => s.Name == "lastUpdated").FirstOrDefault();
+                if (dbState != null){
+                    String lastUpdated = dbState.Value;
+                    //lastUpdated = lu.ToString("yyyy-MM-ddTHH:mm:ss.fffffff"); // regex? 
                 }
                 Console.WriteLine("LastUpdated: {0}", lastUpdated);
             }
@@ -165,23 +165,27 @@ namespace NVSSClient.Services
                 parseBundle(content);
             }
             lastUpdated = nextUpdated.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
-            SaveTimestamp(nextUpdated);
+            SaveTimestamp(lastUpdated);
         }
 
         // Save the last updated timestamp to persist so we don't get repeat messages on a restart
-        private void SaveTimestamp(DateTime now)
+        private void SaveTimestamp(String now)
         {
             using (var scope = _scopeFactory.CreateScope()){
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                Info dbInfo = context.Info.Where(s => s.Name == "lastUpdated").FirstOrDefault();
-                if (dbInfo == null)
+                PersistentState dbState = context.PersistentState.Where(s => s.Name == "lastUpdated").FirstOrDefault();
+                if (dbState == null)
                 {
-                    dbInfo = new Info();
-                    dbInfo.Name = "lastUpdated";
+                    dbState = new PersistentState();
+                    dbState.Name = "lastUpdated";
+                    dbState.Value = now;
+                    context.PersistentState.Add(dbState);
+                    context.SaveChanges();
+                    return;
                 }
                 // update the time
-                dbInfo.LastUpdated = now;
-                context.Update(dbInfo);
+                dbState.Value = now;
+                context.Update(dbState);
                 context.SaveChanges();
             }
         }
@@ -282,6 +286,7 @@ namespace NVSSClient.Services
                     response.StateAuxiliaryIdentifier = message.StateAuxiliaryIdentifier;
                     response.CertificateNumber = message.CertificateNumber;
                     response.DeathJurisdictionID = message.DeathJurisdictionID;
+                    response.DeathYear = message.DeathYear;
                     response.Message = message.ToJson();
                     context.ResponseItems.Add(response);
 
