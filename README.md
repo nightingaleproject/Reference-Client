@@ -11,15 +11,43 @@ This client can be used to test and demo sending messages to the NVSS API Server
 The VRDR reporter sends a JSON vrdr record via `POST` to the client's `/messages` endpoint. Upon receipt, the client converts the json to a VRDR record, wraps it in a FHIR Message and inserts it in the `MessageItem` table. The client's `TimedService` pulls new messages from the `MessageItem` table every X seconds and POSTs the message to NVSS API Server. Next, the `TimedService` makes a `GET` request for any new messages from the NVSS API Server. The `TimedService` parses the response messages and stores them in the `ResponseItems` table. If there was an acknowledgement or error, it updates the `MessageItem` table with the new message status. Finally, the `TimedService` checks for any messages that have not received an acknowledgement in Y seconds and resubmits them. The TimedService runs all of these steps in sequence every X number of seconds. The frequencies of X and Y are configurable. The VRDR reporter sends a `GET` request to the `/messages` endpoint at any time to get the status of all messages.
 
 # API Endpoints
-The client implementation has 2 endpoints
-1. `POST /record` 
-   1. Parameters: The `POST /record` endpoint accepts a list of VRDR records as json
-   2. Function: Wraps each record in a FHIR message and queues the message to be sent to the NVSS API Server
+The client implementation has endpoints to submit VRDR records, update records, and void records. It also has an endpoint to retrieve the status and response of a given record.
+## Sending VRDR Records
+### Submission Records
+1. `POST /record/submission` 
+   1. Parameters: The `POST /record/submission` endpoint accepts a VRDR record as json
+   2. Function: Wraps the record in a FHIR Submission message and queues the message to be sent to the NVSS API Server
    3. Response: A successful request returns `204 No Content`
-2. `GET /record`
-   1. Parameters: None
-   2. Function: Gets all MessageItems in the client DB
-   3. Response: A successful request returns `200 OK` and a JSON list of all MessageItems in the client DB
+2. `POST /record/submissions` 
+   1. Parameters: The `POST /record/submissions` endpoint accepts a list of VRDR records as json
+   2. Function: Wraps each record in a FHIR Submission message and queues the message to be sent to the NVSS API Server
+   3. Response: A successful request returns `204 No Content`
+### Update Records
+1. `POST /record/update` 
+   1. Parameters: The `POST /record/update` endpoint accepts a VRDR record as json
+   2. Function: Wraps the record in a FHIR Update message and queues the message to be sent to the NVSS API Server
+   3. Response: A successful request returns `204 No Content`
+2. `POST /record/updates` 
+   1. Parameters: The `POST /record/updates` endpoint accepts a list of VRDR records as json
+   2. Function: Wraps each record in a FHIR Update message and queues the message to be sent to the NVSS API Server
+   3. Response: A successful request returns `204 No Content`
+### Void Records
+1. `POST /record/void` 
+   1. Parameters: The `POST /record/void` endpoint accepts a VRDR record as json
+   2. Function: Wraps the record in a FHIR Void message and queues the message to be sent to the NVSS API Server
+   3. Response: A successful request returns `204 No Content`
+2. `POST /record/voids` 
+   1. Parameters: The `POST /record/voids` endpoint accepts a list of VRDR records as json
+   2. Function: Wraps each record in a FHIR Void message and queues the message to be sent to the NVSS API Server
+   3. Response: A successful request returns `204 No Content`
+## Checking Responses
+1. `GET /record/status/{deathYear}/{jurisdictionId}/{certNo}`
+   1. Parameters: 
+      1. deathYear: the year of death in the VRDR record 
+      2. jurisditionId: the jurisdiction Id in the VRDR record
+      3. certNo: the 5 digit certificate number in the VRDR record
+   2. Function: Retrieves the most recent MessageItem with business identifiers that match the provided parameters
+   3. Response: A successful request returns `200 OK` and a JSON object with the MessageItem and it's Extraction Error or Coded Response if available
 
 # Getting Started
 The client implementation can run with a local development setup where all services are run locally, or an integrated development setup that connects to the development NVSS API Server. 
