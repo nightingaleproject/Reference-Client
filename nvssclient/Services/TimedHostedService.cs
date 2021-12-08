@@ -103,14 +103,14 @@ namespace NVSSClient.Services
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                
                 // Send messages that have not yet been sent
-                var items = context.MessageItems.Where(s => s.Status == Models.MessageStatus.Pending).ToList();
+                var items = context.MessageItems.Where(s => s.Status == Models.MessageStatus.Pending.ToString()).ToList();
                 foreach (MessageItem item in items)
                 {
                     BaseMessage msg = BaseMessage.Parse(item.Message.ToString(), true);
                     Boolean success = Program.PostMessageAsync(msg);
                     if (success)
                     {
-                        item.Status = Models.MessageStatus.Sent;          
+                        item.Status = Models.MessageStatus.Sent.ToString();          
                         DateTime currentTime = DateTime.Now;
                         int resend = Int32.Parse(Configuration["ResendInterval"]);
                         TimeSpan resendWindow = new TimeSpan(0,0,0,resend);
@@ -134,14 +134,14 @@ namespace NVSSClient.Services
                 // only get unacknowledged ones that have expired
                 DateTime currentTime = DateTime.Now;
 
-                var items = context.MessageItems.Where(s => s.Status != Models.MessageStatus.Acknowledged && s.ExpirationDate < currentTime).ToList();
+                var items = context.MessageItems.Where(s => s.Status != Models.MessageStatus.Acknowledged.ToString() && s.ExpirationDate < currentTime).ToList();
                 foreach (MessageItem item in items)
                 {
                     BaseMessage msg = BaseMessage.Parse(item.Message.ToString(), true);
                     Boolean success = Program.PostMessageAsync(msg);
                     if (success)
                     {
-                        item.Status = Models.MessageStatus.Sent;
+                        item.Status = Models.MessageStatus.Sent.ToString();
                         DateTime sentTime = DateTime.Now;
                         int resend = Int32.Parse(Configuration["ResendInterval"]);
                         TimeSpan resendWindow = new TimeSpan(0,0,0,resend);
@@ -245,7 +245,7 @@ namespace NVSSClient.Services
                     var original = context.MessageItems.Where(s => s.Uid == message.AckedMessageId).First();
 
                     // update message status
-                    original.Status = Models.MessageStatus.Acknowledged;
+                    original.Status = Models.MessageStatus.Acknowledged.ToString();
                     context.Update(original);
                     context.SaveChanges();
                     Console.WriteLine($"Successfully acked message {message.AckedMessageId}");
@@ -277,7 +277,7 @@ namespace NVSSClient.Services
                     var original = context.MessageItems.Where(s => s.DeathJurisdictionID == message.DeathJurisdictionID && s.StateAuxiliaryIdentifier == message.StateAuxiliaryIdentifier).First();
 
                     // update message status
-                    original.Status = Models.MessageStatus.Error;
+                    original.Status = Models.MessageStatus.Error.ToString();
                     context.Update(original);
 
                     // insert response message in db

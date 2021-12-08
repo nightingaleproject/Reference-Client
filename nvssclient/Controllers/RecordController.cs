@@ -33,8 +33,10 @@ namespace NVSSClient.Controllers
 
         public class RecordResponse
         {
-            public MessageItem Message {get; set;}
+            public MessageItem Message {get; set;}          
             public String Response  {get; set;}
+
+           
         }
 
         // POST: Submission Records
@@ -186,7 +188,7 @@ namespace NVSSClient.Controllers
                     RecordResponse resp = new RecordResponse();
                     resp.Message = message;
                     // check if there is a response message
-                    if (message.Status == MessageStatus.Error || message.Status == MessageStatus.AcknowledgedAndCoded)
+                    if (message.Status == MessageStatus.Error.ToString() || message.Status == MessageStatus.AcknowledgedAndCoded.ToString())
                     {
                         // get the most recent response message
                         var response = context.ResponseItems.Where(s => s.CertificateNumber == certNoInt && s.DeathYear == deathYear && s.DeathJurisdictionID == jurisdictionId).OrderByDescending(s => s.CreatedDate).FirstOrDefault();
@@ -220,7 +222,7 @@ namespace NVSSClient.Controllers
                 Console.WriteLine("Business IDs {0}, {1}, {2}", message.DeathYear, message.CertificateNumber, message.DeathJurisdictionID);
                 
                 // Status info
-                item.Status = Models.MessageStatus.Pending;
+                item.Status = Models.MessageStatus.Pending.ToString();
                 item.Retries = 0;
                 
                 // insert new message

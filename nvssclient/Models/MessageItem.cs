@@ -28,7 +28,7 @@ namespace NVSSClient.Models
         public uint? DeathYear {get; set;}
         public String Message {get; set;}
         public int Retries { get; set; }
-        public MessageStatus Status { get; set; }   
+        public String Status { get; set; }   
         public DateTime ? ExpirationDate { get; set; }
     }
 }
