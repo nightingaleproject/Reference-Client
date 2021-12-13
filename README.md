@@ -1,8 +1,13 @@
+# Overview
+NCHS is working to modernize the national collection and exchange of mortality data by developing and deploying new Application Programming Interfaces (APIs) for data exchange, implementing modern standards health like HL7's Fast Healthcare Interoperability Resources (FHIR), and improving overall systems and processes. This repository provides a reference implementation and documentation describing the Client API, which supports the client side exchange of mortality data between NCHS and vital records jurisdictions. For the server side implementation, see [NVSS API server](https://github.com/nightingaleproject/Reference-NCHS-API).
+
 # Reference Client API
-The Reference Client API is an example implementation for jurisdications that handles submitting VRDR FHIR Messages to an NVSS API server, reliable delivery (acknowledgements and retries), and message responses. The implementation follows the [FHIR Messaging IG](http://build.fhir.org/ig/nightingaleproject/vital_records_fhir_messaging_ig/branches/main/message.html). The client leverages the [vrdr-dotnet](https://github.com/nightingaleproject/vrdr-dotnet) library to create and parse FHIR Messages.
+The Reference Client API is an example implementation for jurisdications that handles submitting VRDR FHIR Messages to the [NVSS API server](https://github.com/nightingaleproject/Reference-NCHS-API), reliable delivery (acknowledgements and retries), and retrieving message responses. The implementation follows the [FHIR Messaging IG](http://build.fhir.org/ig/nightingaleproject/vital_records_fhir_messaging_ig/branches/main/message.html). The client leverages the [vrdr-dotnet](https://github.com/nightingaleproject/vrdr-dotnet) library to create and parse FHIR Messages.
+
+The reference implementation is developed for .NET using C#. The client is responsible for interacting with the NVSS API server so jurisdictions do not need to repeat the same implementation. The client abstracts away the reliable message delivery and retrieval between the client and NVSS API server. It provides its own API interface to jurisdictions to simplify their workflow. 
 
 # Use Cases
-This client can be used to test and demo sending messages to the NVSS API Server using the FHIR Messaging IG format. It can also be used as reference for jurisdictions building their own client implementation.
+This client can be used to test and demo messaging between the client and the NVSS API Server using the FHIR Messaging IG format. It can also be used as reference for jurisdictions building their own client implementation.
 
 ## Architecture Diagram 
 <img src="resources/architecture.png" alt="drawing" width="750"/>  
@@ -52,8 +57,32 @@ The client implementation has endpoints to submit VRDR records, update records, 
 # Getting Started
 The client implementation can run with a local development setup where all services are run locally, or an integrated development setup that connects to the development NVSS API Server. 
 
+## Requirements
+This project uses dotnet and docker to run the local database.
+
+## NVSS Development Setup
+1. Set up the database docker containers
+    a. Run `docker-compose up --build` to initialize the client db (postgres)
+    b. From the reference-client-api/nvssclient directory, run `dotnet ef database update` to intialize the client's db
+2.  Configure the client implementation to connect to the development NVSS API Server
+    1. Create an `appsettings.json` file from the `appsettings.json.sample` file
+    2. In `appsettings.json` set `"LocalTesting" : false`
+    3. In `appsettings.json` set `"AuthServer": "https://apigw.cdc.gov/auth/oauth/v2/token"`
+    4. In `appsettings.json` set `"AuthServer": "https://apigw.cdc.gov/OSELS/NCHS/NVSSFHIRAPI/Bundles"`
+    5. In `appsettings.json` fill out the `"Authentication"` section to authenticate to the server via oauth, contact admin for your credentials
+3. Set up OAuth 
+   1. OAuth is required to authenticate to the NVSS API Server. Contact the NVSS server team to acquire your client id, client secret, username, and password.
+   2. In `appsettings.json` set `"ClientId": "<your-client-id>"`
+   3. In `appsettings.json` set `"ClientSecret": "<your-client-secret>"`
+   4. In `appsettings.json` set `"Username": "<your-username>"`
+   5. In `appsettings.json` set `"Password": "<your-password>"`
+4.  Now that the client db is running and the configuration is complete, go to the reference-client-api/nvssclient project directory and run
+    ```
+    dotnet run
+    ```
+
 ## Local Development Setup
-1. Setup the database docker containers
+1. Set up the database docker containers
     a. Run `docker-compose up --build` to initialize the client db (postgres) and the NVSS API Server db (mssql)
     b. From the reference-client-api/nvssclient directory, run `dotnet ef database update` to intialize the client's db
 2. Download the reference-nchs-api code from https://gitlab.mitre.org/nightingale/reference-nchs-api   
@@ -69,20 +98,49 @@ The client implementation can run with a local development setup where all servi
     ```
     dotnet run
     ```
-## NVSS Development Setup
-1. Setup the database docker containers
-    a. Run `docker-compose up --build` to initialize the client db (postgres)
-    b. From the reference-client-api/nvssclient directory, run `dotnet ef database update` to intialize the client's db
-2.  Configure the client implementation to connect to the development NVSS API Server
-    1. Create an `appsettings.json` file from the `appsettings.json.sample` file
-    2. In `appsettings.json` set `"LocalTesting" : false`
-    3. In `appsettings.json` set `"AuthServer": "https://apigw.cdc.gov/auth/oauth/v2/token"`
-    4. In `appsettings.json` set `"AuthServer": "https://apigw.cdc.gov/OSELS/NCHS/NVSSFHIRAPI/Bundles"`
-    5. In `appsettings.json` fill out the `"Authentication"` section to authenticate to the server via oauth, contact admin for your credentials
-3.  Now that the client db is running and the configuration is complete, go to the reference-client-api/nvssclient project directory and run
-    ```
-    dotnet run
-    ```
+
+# Interacting with the Client API
+## Sending VRDR Records
+### Submission Records
+1. Create a FHIR Record. The standard that specifies this format can be found [here](https://build.fhir.org/ig/HL7/vrdr/branches/Sep_2021_Connectathon/). There are also two public library implementations available to assist in the creation of FHIR Records, [VRDR-dotnet](https://github.com/nightingaleproject/vrdr-dotnet) and [VRDR_javalib](https://github.com/MortalityReporting/VRDR_javalib).
+2. Submit the record using a POST request to the `/record/submission` endpoint. The following example demonstrates how to make the request using [curl](https://curl.se/):
+```
+    curl --location --request POST 'http://localhost:4300/record/submission' \
+    --header 'Content-Type: application/json' \
+    --data "@path/to/file.json"
+```
+The API will return a 204 No Content HTTP response if the request was successful.
+
+## Retrieving Responses
+1. After submitting a record, use the `GET /record/status/{deathYear}/{jurisdictionId}/{certNo}` endpoint to check the status of the message or the coded response if available. The response will include the status of the most recent message with the provided business identifiers `deathYear`, `jurisdictionId`, and `certNo`. Responses from the The following example demonstrates how to make the request using [curl](https://curl.se/):
+```
+curl http://localhost:4300/record/status/2018/MA/001
+```
+The API will return a json response if the request was successful. Example Response:
+```
+{
+    "message": {
+        "id": 4,
+        "uid": "bd734a03-8a5c-4ee7-a994-779f58f4433f",
+        "stateAuxiliaryIdentifier": "42",
+        "certificateNumber": 1,
+        "deathJurisdictionID": "MA",
+        "deathYear": 2018,
+        "message": "{\"resourceType\":\"Bundle\",\"id\":\"b443f717-96cc-4f72-8e62-06119d54111d\",\"type\":\"message\",\"timestamp\":\"2021-12-13T10:51:32.770941-05:00\",\"entry\":[{\"fullUrl\":\"urn:uuid:bd734a03-8a5c-4ee7-a994-779f58f4433f\",\"resource\":{\"resourceType\":\"MessageHeader\",\"id\":\"bd734a03-8a5c-4ee7-a994-779f58f4433f\",\"eventUri\":\"http://nchs.cdc.gov/vrdr_submission\",\"destination\":[{\"endpoint\":\"http://nchs.cdc.gov/vrdr_submission\"}],\"source\":{\"endpoint\":\"https://example.com/jurisdiction/message/endpoint\"},\"focus\":[{\"reference\":\"urn:uuid:27c1f73d-59a7-4c52-bb20-7073c1778535\"}]}},{\"fullUrl\":\"urn:uuid:d1911214-a3fc-452f-bb9d-91d4b38d96c6\",\"resource\":{\"resourceType\":\"Parameters\",\"id\":\"d1911214-a3fc-452f-bb9d-91d4b38d96c6\",\"parameter\":[{\"name\":\"cert_no\",\"valueUnsignedInt\":1},{\"name\":\"state_auxiliary_id\",\"valueString\":\"42\"},{\"name\":\"death_year\",\"valueUnsignedInt\":2018},{\"name\":\"jurisdiction_id\",\"valueString\":\"MA\"}]}},
+        ...
+        ,{\"value\":\"42\"}],\"status\":\"current\",\"type\":{\"coding\":[{\"system\":\"http://loinc.org\",\"code\":\"64297-5\",\"display\":\"Death certificate\"}]},\"date\":\"2020-08-07T16:41:57.698163-04:00\",\"author\":[{\"reference\":\"urn:uuid:7afbe14f-932f-4639-966a-84c4e9d2f7c6\"}],\"content\":[{\"attachment\":{\"url\":\"urn:uuid:cf96ffd9-fb38-479f-ba3c-5f3f36752fdb\"}}],\"context\":{\"related\":[{\"reference\":\"urn:uuid:cf96ffd9-fb38-479f-ba3c-5f3f36752fdb\"}]}}}]}}]}",
+        "retries": 0,
+        "status": "Acknowledged",
+        "expirationDate": "2021-12-13T10:52:09.439643",
+        "createdDate": "2021-12-13T10:51:32.781559",
+        "updatedDate": "2021-12-13T10:51:49.376313"
+    },
+    "response": null
+}
+```
+
+# Client Developer Documentation
+This section provides useful information to developers working on the client implementation or referring to it as a reference for their own custom implementation.
 
 ## Migrations
 1. When applying a new migration, update the Models to reflect the desired changes. 
@@ -98,7 +156,7 @@ The client implementation can run with a local development setup where all servi
 4. Run `dotnet ef migrations add <Your-Migration-Name>` to create the new migration
 5. Run `dotnet ef database update` to update the db schema
 
-# Developer Notes and Justifications
+## Developer Notes and Justifications
 - To persist data and make it available to the Jurisidction upon request, the full response message is stored in the ResponseItems table, rather than just the ID in a Message Log. The ResponseItem table serves as the Message Log, see [FHIR Messaging IG](http://build.fhir.org/ig/nightingaleproject/vital_records_fhir_messaging_ig/branches/main/message.html)
 - The `POST /record` end point does not return data because the submission and coding process takes to long to provide a synchronous response. The user can request the message status via the `GET /record` endpoint. 
 
