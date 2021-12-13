@@ -1,19 +1,19 @@
 # Overview
-NCHS is working to modernize the national collection and exchange of mortality data by developing and deploying new Application Programming Interfaces (APIs) for data exchange, implementing modern standards health like HL7's Fast Healthcare Interoperability Resources (FHIR), and improving overall systems and processes. This repository provides a reference implementation and documentation describing the Client API, which supports the client side exchange of mortality data between NCHS and vital records jurisdictions. For the server side implementation, see [NVSS API server](https://github.com/nightingaleproject/Reference-NCHS-API).
+NCHS is working to modernize the national collection and exchange of mortality data by developing and deploying new Application Programming Interfaces (APIs) for data exchange, implementing modern standards health like HL7's Fast Healthcare Interoperability Resources (FHIR), and improving overall systems and processes. This repository provides a reference implementation and documentation describing the Client API, which supports the client side exchange of mortality data between vital records jurisdictions and NCHS. For the server side implementation, see [NVSS API server](https://github.com/nightingaleproject/Reference-NCHS-API).
 
 # Reference Client API
-The Reference Client API is an example implementation for jurisdications that handles submitting VRDR FHIR Messages to the [NVSS API server](https://github.com/nightingaleproject/Reference-NCHS-API), reliable delivery (acknowledgements and retries), and retrieving message responses. The implementation follows the [FHIR Messaging IG](http://build.fhir.org/ig/nightingaleproject/vital_records_fhir_messaging_ig/branches/main/message.html). The client leverages the [vrdr-dotnet](https://github.com/nightingaleproject/vrdr-dotnet) library to create and parse FHIR Messages.
+The Reference Client API is an example implementation for jurisdications that handles submitting VRDR FHIR Messages, reliable delivery (acknowledgements and retries), and retrieving message responses from the [NVSS API server](https://github.com/nightingaleproject/Reference-NCHS-API). The implementation follows the [FHIR Messaging IG](http://build.fhir.org/ig/nightingaleproject/vital_records_fhir_messaging_ig/branches/main/message.html). The reference implementation is developed for .NET using C# and leverages the [vrdr-dotnet](https://github.com/nightingaleproject/vrdr-dotnet) library to create and parse FHIR Messages.
 
-The reference implementation is developed for .NET using C#. The client is responsible for interacting with the NVSS API server so jurisdictions do not need to repeat the same implementation. The client abstracts away the reliable message delivery and retrieval between the client and NVSS API server. It provides its own API interface to jurisdictions to simplify their workflow. 
+The client is responsible for interacting with the NVSS API server so jurisdictions do not need to repeat the same implementation. The client abstracts away the reliable message delivery and retrieval between the client and NVSS API server. It provides its own API interface to jurisdictions to simplify their workflow. 
 
 # Use Cases
-This client can be used to test and demo messaging between the client and the NVSS API Server using the FHIR Messaging IG format. It can also be used as reference for jurisdictions building their own client implementation.
+This client can be used to test and demo messaging between the client and the NVSS API Server using the FHIR Messaging IG format. It can also be used as a reference for jurisdictions building their own client implementation.
 
 ## Architecture Diagram 
 <img src="resources/architecture.png" alt="drawing" width="750"/>  
 
 ### Architecture Description
-The VRDR reporter sends a JSON vrdr record via `POST` to the client's `/messages` endpoint. Upon receipt, the client converts the json to a VRDR record, wraps it in a FHIR Message and inserts it in the `MessageItem` table. The client's `TimedService` pulls new messages from the `MessageItem` table every X seconds and POSTs the message to NVSS API Server. Next, the `TimedService` makes a `GET` request for any new messages from the NVSS API Server. The `TimedService` parses the response messages and stores them in the `ResponseItems` table. If there was an acknowledgement or error, it updates the `MessageItem` table with the new message status. Finally, the `TimedService` checks for any messages that have not received an acknowledgement in Y seconds and resubmits them. The TimedService runs all of these steps in sequence every X number of seconds. The frequencies of X and Y are configurable. The VRDR reporter sends a `GET` request to the `/messages` endpoint at any time to get the status of all messages.
+The client implementation runs a service that submits messages to the NVSS API and retrieves responses to make available to jurisdictions. The service handles reliable delivery, resends, and parsing so jurisdictions do not need to implement a custom service. The service sits between the jurisdiction's system and the NVSS API Server. The VRDR reporter sends a JSON vrdr record via `POST` to the client's `/record/submission`, `/record/update`, or `/record/void` endpoint. Upon receipt, the client converts the json to a VRDR record, wraps it in a FHIR Message and inserts it in the `MessageItem` table. The client's `TimedService` pulls new messages from the `MessageItem` table every X-configured seconds and POSTs the message to NVSS API Server. Next, the `TimedService` makes a `GET` request for any new messages from the NVSS API Server. The `TimedService` parses the response messages and stores them in the `ResponseItems` table. If there was an acknowledgement or error, it updates the corresponding message in the `MessageItem` table with the new message status. Finally, the `TimedService` checks for any messages that have not received an acknowledgement in Y-configured seconds and resubmits them. The TimedService runs these three steps in sequence every X-configured seconds. The frequencies of X and Y are configurable. The VRDR reporter sends a `GET` request to the `/record/status/{deathYear}/{jurisdictionId}/{certNo}` endpoint at any time to get the status of the message with the provided business identifiers for death year, jurisdiction id, and certificate number. Note that if a submission message was sent, followed by an update message with the same business identifiers, the returned status will be for the latest message inserted into the database, in this case the update message status. 
 
 # API Endpoints
 The client implementation has endpoints to submit VRDR records, update records, and void records. It also has an endpoint to retrieve the status and response of a given record.
@@ -62,8 +62,8 @@ This project uses dotnet and docker to run the local database.
 
 ## NVSS Development Setup
 1. Set up the database docker containers
-    a. Run `docker-compose up --build` to initialize the client db (postgres)
-    b. From the reference-client-api/nvssclient directory, run `dotnet ef database update` to intialize the client's db
+    1. Run `docker-compose up --build` to initialize the client db (postgres)
+    2. From the reference-client-api/nvssclient directory, run `dotnet ef database update` to intialize the client's db
 2.  Configure the client implementation to connect to the development NVSS API Server
     1. Create an `appsettings.json` file from the `appsettings.json.sample` file
     2. In `appsettings.json` set `"LocalTesting" : false`
@@ -76,19 +76,19 @@ This project uses dotnet and docker to run the local database.
    3. In `appsettings.json` set `"ClientSecret": "<your-client-secret>"`
    4. In `appsettings.json` set `"Username": "<your-username>"`
    5. In `appsettings.json` set `"Password": "<your-password>"`
-4.  Now that the client db is running and the configuration is complete, go to the reference-client-api/nvssclient project directory and run
+4.  Once the client db is running and the configuration is complete, go to the reference-client-api/nvssclient project directory and run
     ```
     dotnet run
     ```
 
 ## Local Development Setup
 1. Set up the database docker containers
-    a. Run `docker-compose up --build` to initialize the client db (postgres) and the NVSS API Server db (mssql)
-    b. From the reference-client-api/nvssclient directory, run `dotnet ef database update` to intialize the client's db
+    1. Run `docker-compose up --build` to initialize the client db (postgres) and the NVSS API Server db (mssql)
+    2. From the reference-client-api/nvssclient directory, run `dotnet ef database update` to intialize the client's db
 2. Download the reference-nchs-api code from https://gitlab.mitre.org/nightingale/reference-nchs-api   
-    a. make sure the db password in appsettings.json matches the one set in the docker compose file
-    b. from the reference-nchs-api/messaging project directory run `dotnet ef database update` to initialize the NVSS API Server's db
-    c. from the reference-nchs-api directory run the NVSS API Server with `dotnet run --project messaging`
+    1. make sure the db password in appsettings.json matches the one set in the docker compose file
+    2. from the reference-nchs-api/messaging project directory run `dotnet ef database update` to initialize the NVSS API Server's db
+    3. from the reference-nchs-api directory run the NVSS API Server with `dotnet run --project messaging`
 3.  Configure the client implementation to connect to the local NVSS API Server
     1.  Create an `appsettings.json` file from the `appsettings.json.sample` file
     2.  In `appsettings.json` set `"ClientDatabase"` to your database connection string
@@ -112,7 +112,7 @@ This project uses dotnet and docker to run the local database.
 The API will return a 204 No Content HTTP response if the request was successful.
 
 ## Retrieving Responses
-1. After submitting a record, use the `GET /record/status/{deathYear}/{jurisdictionId}/{certNo}` endpoint to check the status of the message or the coded response if available. The response will include the status of the most recent message with the provided business identifiers `deathYear`, `jurisdictionId`, and `certNo`. Responses from the The following example demonstrates how to make the request using [curl](https://curl.se/):
+1. After submitting a record, use the `GET /record/status/{deathYear}/{jurisdictionId}/{certNo}` endpoint to check the status of the message and the coded response if available. The json response will include the status of the most recent message with the provided business identifiers `deathYear`, `jurisdictionId`, and `certNo`. The following example demonstrates how to make the request using [curl](https://curl.se/):
 ```
 curl http://localhost:4300/record/status/2018/MA/001
 ```
