@@ -44,10 +44,10 @@ namespace NVSSClient.Services
             // Check for persistent data 
             using (var scope = _scopeFactory.CreateScope()){
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                Info dbInfo = context.Info.Where(s => s.Name == "lastUpdated").FirstOrDefault();
-                if (dbInfo != null){
-                    DateTime lu = dbInfo.LastUpdated;
-                    lastUpdated = lu.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
+                PersistentState dbState = context.PersistentState.Where(s => s.Name == "lastUpdated").FirstOrDefault();
+                if (dbState != null){
+                    String lastUpdated = dbState.Value;
+                    //lastUpdated = lu.ToString("yyyy-MM-ddTHH:mm:ss.fffffff"); // regex? 
                 }
                 Console.WriteLine("LastUpdated: {0}", lastUpdated);
             }
@@ -103,14 +103,14 @@ namespace NVSSClient.Services
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                
                 // Send messages that have not yet been sent
-                var items = context.MessageItems.Where(s => s.Status == Models.MessageStatus.Pending).ToList();
+                var items = context.MessageItems.Where(s => s.Status == Models.MessageStatus.Pending.ToString()).ToList();
                 foreach (MessageItem item in items)
                 {
                     BaseMessage msg = BaseMessage.Parse(item.Message.ToString(), true);
                     Boolean success = Program.PostMessageAsync(msg);
                     if (success)
                     {
-                        item.Status = Models.MessageStatus.Sent;          
+                        item.Status = Models.MessageStatus.Sent.ToString();          
                         DateTime currentTime = DateTime.Now;
                         int resend = Int32.Parse(Configuration["ResendInterval"]);
                         TimeSpan resendWindow = new TimeSpan(0,0,0,resend);
@@ -134,14 +134,14 @@ namespace NVSSClient.Services
                 // only get unacknowledged ones that have expired
                 DateTime currentTime = DateTime.Now;
 
-                var items = context.MessageItems.Where(s => s.Status != Models.MessageStatus.Acknowledged && s.ExpirationDate < currentTime).ToList();
+                var items = context.MessageItems.Where(s => s.Status != Models.MessageStatus.Acknowledged.ToString() && s.ExpirationDate < currentTime).ToList();
                 foreach (MessageItem item in items)
                 {
                     BaseMessage msg = BaseMessage.Parse(item.Message.ToString(), true);
                     Boolean success = Program.PostMessageAsync(msg);
                     if (success)
                     {
-                        item.Status = Models.MessageStatus.Sent;
+                        item.Status = Models.MessageStatus.Sent.ToString();
                         DateTime sentTime = DateTime.Now;
                         int resend = Int32.Parse(Configuration["ResendInterval"]);
                         TimeSpan resendWindow = new TimeSpan(0,0,0,resend);
@@ -165,23 +165,27 @@ namespace NVSSClient.Services
                 parseBundle(content);
             }
             lastUpdated = nextUpdated.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
-            SaveTimestamp(nextUpdated);
+            SaveTimestamp(lastUpdated);
         }
 
         // Save the last updated timestamp to persist so we don't get repeat messages on a restart
-        private void SaveTimestamp(DateTime now)
+        private void SaveTimestamp(String now)
         {
             using (var scope = _scopeFactory.CreateScope()){
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                Info dbInfo = context.Info.Where(s => s.Name == "lastUpdated").FirstOrDefault();
-                if (dbInfo == null)
+                PersistentState dbState = context.PersistentState.Where(s => s.Name == "lastUpdated").FirstOrDefault();
+                if (dbState == null)
                 {
-                    dbInfo = new Info();
-                    dbInfo.Name = "lastUpdated";
+                    dbState = new PersistentState();
+                    dbState.Name = "lastUpdated";
+                    dbState.Value = now;
+                    context.PersistentState.Add(dbState);
+                    context.SaveChanges();
+                    return;
                 }
                 // update the time
-                dbInfo.LastUpdated = now;
-                context.Update(dbInfo);
+                dbState.Value = now;
+                context.Update(dbState);
                 context.SaveChanges();
             }
         }
@@ -241,7 +245,7 @@ namespace NVSSClient.Services
                     var original = context.MessageItems.Where(s => s.Uid == message.AckedMessageId).First();
 
                     // update message status
-                    original.Status = Models.MessageStatus.Acknowledged;
+                    original.Status = Models.MessageStatus.Acknowledged.ToString();
                     context.Update(original);
                     context.SaveChanges();
                     Console.WriteLine($"Successfully acked message {message.AckedMessageId}");
@@ -273,7 +277,7 @@ namespace NVSSClient.Services
                     var original = context.MessageItems.Where(s => s.DeathJurisdictionID == message.DeathJurisdictionID && s.StateAuxiliaryIdentifier == message.StateAuxiliaryIdentifier).First();
 
                     // update message status
-                    original.Status = Models.MessageStatus.Error;
+                    original.Status = Models.MessageStatus.Error.ToString();
                     context.Update(original);
 
                     // insert response message in db
@@ -282,6 +286,7 @@ namespace NVSSClient.Services
                     response.StateAuxiliaryIdentifier = message.StateAuxiliaryIdentifier;
                     response.CertificateNumber = message.CertificateNumber;
                     response.DeathJurisdictionID = message.DeathJurisdictionID;
+                    response.DeathYear = message.DeathYear;
                     response.Message = message.ToJson();
                     context.ResponseItems.Add(response);
 
