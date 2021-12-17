@@ -1,6 +1,7 @@
 using System.Linq;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -11,7 +12,7 @@ namespace NVSSClient.tests
 {
     public class CustomWebApplicationFactory<TStartup> : WebApplicationFactory<TStartup> where TStartup: class
     {
-           public IConfiguration Configuration { get; }
+        public IConfiguration Configuration { get; }
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             // Database setup is handled by overriding which Database configuration is used
@@ -33,5 +34,13 @@ namespace NVSSClient.tests
                 }
             });
         }
+
+        // Override the CreateHostBuilder in Program.cs so we can control when the Timed Service starts 
+        protected override IHostBuilder CreateHostBuilder() =>
+            Host.CreateDefaultBuilder()
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.UseStartup<Startup>();
+                });
     }
 }

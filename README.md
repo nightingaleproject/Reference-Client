@@ -156,6 +156,11 @@ This section provides useful information to developers working on the client imp
 4. Run `dotnet ef migrations add <Your-Migration-Name>` to create the new migration
 5. Run `dotnet ef database update` to update the db schema
 
+## Testing
+1. Tests are located in `nvssclient.tests` 
+2. `cd` into the nvssclient.tests folder 
+3. Run `dotnet test`
+
 ## Developer Notes and Justifications
 - To persist data and make it available to the Jurisidction upon request, the full response message is stored in the ResponseItems table, rather than just the ID in a Message Log. The ResponseItem table serves as the Message Log, see [FHIR Messaging IG](http://build.fhir.org/ig/nightingaleproject/vital_records_fhir_messaging_ig/branches/main/message.html)
 - The `POST /record` end point does not return data because the submission and coding process takes to long to provide a synchronous response. The user can request the message status via the `GET /record` endpoint. 

@@ -32,7 +32,7 @@ namespace NVSSClient.tests {
         [Fact]
         public async Task GetMessageStatus_ReturnsMessages()
         {
-            var response = await _client.GetAsync("/record");
+            var response = await _client.GetAsync("/record/status/2018/MA/001");
             response.EnsureSuccessStatusCode();
             var responseString = await response.Content.ReadAsStringAsync();
             //Assert, for now just check it's not empty
@@ -45,7 +45,7 @@ namespace NVSSClient.tests {
         {
             var records = GetTestRecords();
             // Submit that Death Record
-            HttpRequestMessage postRequest = new HttpRequestMessage(HttpMethod.Post, "http://localhost:4300/record");
+            HttpRequestMessage postRequest = new HttpRequestMessage(HttpMethod.Post, "http://localhost:4300/record/submissions");
             var json = JsonSerializer.Serialize(records);
             postRequest.Content = new StringContent(json);
             postRequest.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
