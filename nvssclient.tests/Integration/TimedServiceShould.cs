@@ -14,6 +14,7 @@ using System.Linq;
 using Newtonsoft.Json.Linq;
 using VRDR;
 using NVSSClient.Models;
+using NVSSClient.Controllers;
 using NVSSClient.Services;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -32,6 +33,8 @@ namespace NVSSClient.tests {
         private readonly CustomWebApplicationFactory<NVSSClient.Startup> _factory;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly HttpClient _client;
+
+        private ServiceProvider _serviceProvider;
  
         public TimedServiceShould(CustomWebApplicationFactory<NVSSClient.Startup> factory)
         {
@@ -40,33 +43,78 @@ namespace NVSSClient.tests {
                 AllowAutoRedirect = false
             });
 
+            Console.WriteLine(_factory.Configuration);
+            _serviceProvider = new ServiceCollection()
+            .AddSingleton<IHostedService, TimedHostedService>()
+            .AddDbContext<AppDbContext>(options => options.UseNpgsql("Host=localhost;Username=postgres;Password=mysecretpassword;Database=postgres;"))
+            .AddLogging()
+            .AddScoped<IConfiguration>(_ => _factory.Configuration)
+            .BuildServiceProvider();
         }
 
         [Fact]
         public void ParseContent_ShouldParseCodedResponse()
         {
             Console.WriteLine(_factory.Configuration);
-            ServiceProvider serviceProvider = new ServiceCollection()
-            .AddSingleton<IHostedService, TimedHostedService>()
-            .AddDbContext<AppDbContext>(options => options.UseNpgsql("Host=localhost;Username=postgres;Password=mysecretpassword;Database=postgres;"))
-            .AddLogging()
-            .AddScoped<IConfiguration>(_ => _factory.Configuration)
-            .BuildServiceProvider();
 
-            using (var scope = serviceProvider.CreateScope())
+            int respItems; 
+            MessageItem item;
+            using (var scope = _serviceProvider.CreateScope())
             {
+
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 context.Database.EnsureCreated();
-                var respItems = context.ResponseItems.Count();
 
-                var timedService = serviceProvider.GetService<IHostedService>() as TimedHostedService;
-                Bundle bundle = GetBundleOfBundleResponses();
-                //Todo use an await
-                timedService.parseBundle(bundle.ToJson());
+                // Create "Acknowledged" test record to for the response
+                DeathRecord record = new DeathRecord(File.ReadAllText(FixturePath("test-files/json/DeathRecord1.json")));
+                var message = new DeathRecordSubmission(record);
+                message.DeathJurisdictionID = "FL";
+                message.CertificateNumber = 5;
+                message.DeathYear = 2021;
+                message.MessageSource = "https://example.com/jurisdiction/message/endpoint";
 
+                item = new MessageItem();
+                item.Uid = message.MessageId;
+                item.Message = message.ToJson().ToString();
+                
+                // Business Identifiers
+                item.StateAuxiliaryIdentifier = message.StateAuxiliaryIdentifier;
+                item.CertificateNumber = message.CertificateNumber;
+                item.DeathJurisdictionID = message.DeathJurisdictionID;
+                item.DeathYear = message.DeathYear;
+                Console.WriteLine("Business IDs {0}, {1}, {2}", message.DeathYear, message.CertificateNumber, message.DeathJurisdictionID);
+                
+                // Status info
+                item.Status = Models.MessageStatus.Acknowledged.ToString();
+                item.Retries = 0;
+                
+                // insert new message
+                context.MessageItems.Add(item);
+                context.SaveChanges();
+
+                respItems = context.ResponseItems.Count();
+            }
+
+            var timedService = _serviceProvider.GetService<IHostedService>() as TimedHostedService;
+            Bundle bundle = GetBundleOfBundleResponses();
+            //Todo use an await
+            timedService.parseBundle(bundle.ToJson());
+
+            using (var scope = _serviceProvider.CreateScope())
+            {
+
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                context.Database.EnsureCreated();
                 var newRespItems = context.ResponseItems.Count();
 
                 Assert.Equal(1, newRespItems - respItems);
+
+                context.Remove(item);
+
+                ResponseItem response = context.ResponseItems.Where(m => m.Uid == "b27d6803-86bc-4ec5-bd43-173951ce362b").FirstOrDefault();
+                context.Remove(response);
+
+                context.SaveChanges();
             }
         }
 
@@ -75,6 +123,10 @@ namespace NVSSClient.tests {
             Console.WriteLine("Test parse bundle");
             List<BaseMessage> testMessages = new List<BaseMessage>();
             ExtractionErrorMessage message = BaseMessage.Parse<ExtractionErrorMessage>(FixtureStream("test-files/json/ExtractionErrorMessage.json"));
+            message.DeathJurisdictionID = "FL";
+            message.CertificateNumber = 5;
+            message.DeathYear = 2021;
+
             testMessages.Add(message);
 
             Bundle responseBundle = new Bundle();

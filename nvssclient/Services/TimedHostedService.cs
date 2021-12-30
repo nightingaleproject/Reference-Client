@@ -209,12 +209,14 @@ namespace NVSSClient.Services
                             Console.WriteLine($"Received ask message: {message.MessageId} for {message.AckedMessageId}");
                             break;
                         case "http://nchs.cdc.gov/vrdr_coding":
-                            //message = new CodingResponseMessage(bundle);
-                            Console.WriteLine($"Received coding response: {msg.MessageId}");
+                            CodingResponseMessage codeMsg = BaseMessage.Parse<CodingResponseMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                            //ProcessMessage(codeMsg);
+                            Console.WriteLine($"Received coding: {codeMsg.MessageId}");
                             break;
                         case "http://nchs.cdc.gov/vrdr_coding_update":
-                            //message = new CodingUpdateMessage(bundle);
-                            Console.WriteLine($"Received coding update: {msg.MessageId}");
+                            CodingUpdateMessage updateMsg = BaseMessage.Parse<CodingUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                            //ProcessMessage(updateMsg);
+                            Console.WriteLine($"Received coding update: {updateMsg.MessageId}");
                             break;
                         case "http://nchs.cdc.gov/vrdr_extraction_error":
                             ExtractionErrorMessage errMsg = BaseMessage.Parse<ExtractionErrorMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
@@ -258,7 +260,8 @@ namespace NVSSClient.Services
             }
         }
 
-        // Extraction errors are relevant to specific messages
+        // Process extraction errors, codings, and coding updates 
+        // Extraction errors, coding, and updates are relevant to specific messages
         public void ProcessExtractionErrorMessage(ExtractionErrorMessage message)
         {
             try 
@@ -267,16 +270,24 @@ namespace NVSSClient.Services
                     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                     
                     // check for a duplicate
+                    // if a duplicate resend the ack
                     int count = context.ResponseItems.Where(m => m.Uid == message.MessageId).Count();
                     if (count > 0) {
-                        Console.WriteLine($"Received duplicate message with Id: {message.MessageId}, ignore");
+                        Console.WriteLine($"Received duplicate message with Id: {message.MessageId}, ignore and resend ack");
+                        
+                        // create ACK message for the extraction error
+                        AckMessage ackDuplicate = new AckMessage(message);
+                        // either send acks async or create another table or field for acks, they would have the same identifiers so we don't want them in the messageItem table as is
+                        Boolean success = Program.PostMessageAsync(BaseMessage.Parse(ackDuplicate.ToJson().ToString(), true));
+                        if (!success)
+                        {
+                            Console.WriteLine($"Failed to send ack for message {message.MessageId}");
+                        }
                         return;
                     }
 
                     // find the message the error is for
                     var original = context.MessageItems.Where(s => s.DeathJurisdictionID == message.DeathJurisdictionID && s.StateAuxiliaryIdentifier == message.StateAuxiliaryIdentifier).First();
-
-                    // update message status
                     original.Status = Models.MessageStatus.Error.ToString();
                     context.Update(original);
 
@@ -287,12 +298,21 @@ namespace NVSSClient.Services
                     response.CertificateNumber = message.CertificateNumber;
                     response.DeathJurisdictionID = message.DeathJurisdictionID;
                     response.DeathYear = message.DeathYear;
-                    response.Message = message.ToJson();
+                    response.Message = message.ToJson().ToString();
                     context.ResponseItems.Add(response);
 
-                    // TODO create ACK message for the the message and insert into MessageDB
+                    Console.WriteLine("Created response");
+
                     context.SaveChanges();
-                    Console.WriteLine($"Successfully recorded error message {message.MessageId}");
+                    Console.WriteLine($"Successfully recorded {message.MessageType} message {message.MessageId}");
+
+                    // create ACK message for the extraction error
+                    AckMessage ack = new AckMessage(message);
+                    Boolean sent = Program.PostMessageAsync(ack);
+                    if (!sent)
+                    {
+                        Console.WriteLine($"Failed to send ack for message {message.MessageId}");
+                    }
                 }
             } catch (Exception e)
             {
@@ -301,8 +321,5 @@ namespace NVSSClient.Services
                 Console.WriteLine("Message :{0} ",e.Message);
             }
         }
-
-        // Coding response handler
-        // Coding update response handler
     }
 }

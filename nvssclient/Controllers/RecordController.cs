@@ -169,6 +169,7 @@ namespace NVSSClient.Controllers
             return NoContent();
         }
 
+        // TODO should the responses include the full response history? or just the latest response, probably just the response
         // GET: Record Status
         [HttpGet("status/{deathYear}/{jurisdictionId}/{certNo}")]
         public async Task<ActionResult<RecordResponse>> GetRecordStatus(uint deathYear, string jurisdictionId, string certNo)
