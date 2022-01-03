@@ -210,17 +210,17 @@ namespace NVSSClient.Services
                             break;
                         case "http://nchs.cdc.gov/vrdr_coding":
                             CodingResponseMessage codeMsg = BaseMessage.Parse<CodingResponseMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                            //ProcessMessage(codeMsg);
+                            ProcessResponseMessage(codeMsg);
                             Console.WriteLine($"Received coding: {codeMsg.MessageId}");
                             break;
                         case "http://nchs.cdc.gov/vrdr_coding_update":
                             CodingUpdateMessage updateMsg = BaseMessage.Parse<CodingUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                            //ProcessMessage(updateMsg);
+                            ProcessResponseMessage(updateMsg);
                             Console.WriteLine($"Received coding update: {updateMsg.MessageId}");
                             break;
                         case "http://nchs.cdc.gov/vrdr_extraction_error":
                             ExtractionErrorMessage errMsg = BaseMessage.Parse<ExtractionErrorMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                            ProcessExtractionErrorMessage(errMsg);
+                            ProcessResponseMessage(errMsg);
                             Console.WriteLine($"Received extraction error: {errMsg.MessageId}");
                             break;
                         default:
@@ -260,9 +260,9 @@ namespace NVSSClient.Services
             }
         }
 
-        // Process extraction errors, codings, and coding updates 
-        // Extraction errors, coding, and updates are relevant to specific messages
-        public void ProcessExtractionErrorMessage(ExtractionErrorMessage message)
+        // Process codings, and coding updates 
+        // Coding and updates are relevant to specific messages
+        public void ProcessResponseMessage(BaseMessage message)
         {
             try 
             {
@@ -275,9 +275,8 @@ namespace NVSSClient.Services
                     if (count > 0) {
                         Console.WriteLine($"Received duplicate message with Id: {message.MessageId}, ignore and resend ack");
                         
-                        // create ACK message for the extraction error
+                        // create ACK message for the response
                         AckMessage ackDuplicate = new AckMessage(message);
-                        // either send acks async or create another table or field for acks, they would have the same identifiers so we don't want them in the messageItem table as is
                         Boolean success = Program.PostMessageAsync(BaseMessage.Parse(ackDuplicate.ToJson().ToString(), true));
                         if (!success)
                         {
@@ -287,8 +286,24 @@ namespace NVSSClient.Services
                     }
 
                     // find the message the error is for
-                    var original = context.MessageItems.Where(s => s.DeathJurisdictionID == message.DeathJurisdictionID && s.StateAuxiliaryIdentifier == message.StateAuxiliaryIdentifier).First();
-                    original.Status = Models.MessageStatus.Error.ToString();
+                    var original = context.MessageItems.Where(s => s.DeathJurisdictionID == message.DeathJurisdictionID && s.StateAuxiliaryIdentifier == message.StateAuxiliaryIdentifier && s.DeathYear == message.DeathYear).FirstOrDefault();
+                    // Update the status
+                    switch (message.MessageType)
+                    {
+                        case "http://nchs.cdc.gov/vrdr_coding":
+                            original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
+                            break;
+                        case "http://nchs.cdc.gov/vrdr_coding_update":
+                            original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
+                            break;
+                        case "http://nchs.cdc.gov/vrdr_extraction_error":
+                            original.Status = Models.MessageStatus.Error.ToString();
+                            break;
+                        default:
+                            // TODO should create an error
+                            Console.WriteLine($"Unknown message type");
+                            break;
+                    }
                     context.Update(original);
 
                     // insert response message in db
