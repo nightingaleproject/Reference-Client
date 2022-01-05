@@ -142,12 +142,14 @@ namespace NVSSClient.Services
                     if (success)
                     {
                         item.Status = Models.MessageStatus.Sent.ToString();
+                        item.Retries = item.Retries + 1;
                         DateTime sentTime = DateTime.Now;
-                        int resend = Int32.Parse(Configuration["ResendInterval"]);
+                        // exponential backoff multiplies the resend interval by the number of retries
+                        int resend = Int32.Parse(Configuration["ResendInterval"]) * item.Retries;
                         TimeSpan resendWindow = new TimeSpan(0,0,0,resend);
                         DateTime expireTime = sentTime.Add(resendWindow);
                         item.ExpirationDate = expireTime;
-                        item.Retries = item.Retries + 1;
+                        
                         context.Update(item);
                         context.SaveChanges();
                     }
