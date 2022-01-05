@@ -71,7 +71,6 @@ namespace NVSSClient.Services
                 "Timed Hosted Service is working. Count: {Count}", count);
             
             // Step 1, submit new records in the db
-            // TODO change this to a listening endpoint and submit messages on receipt
             SubmitNewMessages();
             // Step 2, poll for response messages from the server
             PollForResponses();
@@ -134,7 +133,8 @@ namespace NVSSClient.Services
                 // only get unacknowledged ones that have expired
                 DateTime currentTime = DateTime.Now;
 
-                var items = context.MessageItems.Where(s => s.Status != Models.MessageStatus.Acknowledged.ToString() && s.ExpirationDate < currentTime).ToList();
+                // Don't resend ack'd messages or messages in an error state
+                var items = context.MessageItems.Where(s => s.Status != Models.MessageStatus.Acknowledged.ToString() && s.Status != Models.MessageStatus.Error.ToString() && s.ExpirationDate < currentTime).ToList();
                 foreach (MessageItem item in items)
                 {
                     BaseMessage msg = BaseMessage.Parse(item.Message.ToString(), true);
@@ -205,23 +205,23 @@ namespace NVSSClient.Services
                     {
                         case "http://nchs.cdc.gov/vrdr_acknowledgement":
                             AckMessage message = BaseMessage.Parse<AckMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                            ProcessAckMessage(message);
                             Console.WriteLine($"Received ask message: {message.MessageId} for {message.AckedMessageId}");
+                            ProcessAckMessage(message);
                             break;
                         case "http://nchs.cdc.gov/vrdr_coding":
                             CodingResponseMessage codeMsg = BaseMessage.Parse<CodingResponseMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                            ProcessResponseMessage(codeMsg);
                             Console.WriteLine($"Received coding: {codeMsg.MessageId}");
+                            ProcessResponseMessage(codeMsg);
                             break;
                         case "http://nchs.cdc.gov/vrdr_coding_update":
                             CodingUpdateMessage updateMsg = BaseMessage.Parse<CodingUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                            ProcessResponseMessage(updateMsg);
                             Console.WriteLine($"Received coding update: {updateMsg.MessageId}");
+                            ProcessResponseMessage(updateMsg);
                             break;
                         case "http://nchs.cdc.gov/vrdr_extraction_error":
                             ExtractionErrorMessage errMsg = BaseMessage.Parse<ExtractionErrorMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                            ProcessResponseMessage(errMsg);
                             Console.WriteLine($"Received extraction error: {errMsg.MessageId}");
+                            ProcessResponseMessage(errMsg);
                             break;
                         default:
                             Console.WriteLine($"Unknown message type");
@@ -250,7 +250,7 @@ namespace NVSSClient.Services
                     original.Status = Models.MessageStatus.Acknowledged.ToString();
                     context.Update(original);
                     context.SaveChanges();
-                    Console.WriteLine($"Successfully acked message {message.AckedMessageId}");
+                    Console.WriteLine($"Successfully acked message {original.Uid}");
                 }
             } catch (Exception e)
             {
