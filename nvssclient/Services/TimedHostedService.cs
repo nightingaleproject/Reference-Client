@@ -71,7 +71,6 @@ namespace NVSSClient.Services
                 "Timed Hosted Service is working. Count: {Count}", count);
             
             // Step 1, submit new records in the db
-            // TODO change this to a listening endpoint and submit messages on receipt
             SubmitNewMessages();
             // Step 2, poll for response messages from the server
             PollForResponses();
@@ -134,7 +133,8 @@ namespace NVSSClient.Services
                 // only get unacknowledged ones that have expired
                 DateTime currentTime = DateTime.Now;
 
-                var items = context.MessageItems.Where(s => s.Status != Models.MessageStatus.Acknowledged.ToString() && s.ExpirationDate < currentTime).ToList();
+                // Don't resend ack'd messages or messages in an error state
+                var items = context.MessageItems.Where(s => s.Status != Models.MessageStatus.Acknowledged.ToString() && s.Status != Models.MessageStatus.Error.ToString() && s.ExpirationDate < currentTime).ToList();
                 foreach (MessageItem item in items)
                 {
                     BaseMessage msg = BaseMessage.Parse(item.Message.ToString(), true);
@@ -142,12 +142,14 @@ namespace NVSSClient.Services
                     if (success)
                     {
                         item.Status = Models.MessageStatus.Sent.ToString();
+                        item.Retries = item.Retries + 1;
                         DateTime sentTime = DateTime.Now;
-                        int resend = Int32.Parse(Configuration["ResendInterval"]);
+                        // exponential backoff multiplies the resend interval by the number of retries
+                        int resend = Int32.Parse(Configuration["ResendInterval"]) * item.Retries;
                         TimeSpan resendWindow = new TimeSpan(0,0,0,resend);
                         DateTime expireTime = sentTime.Add(resendWindow);
                         item.ExpirationDate = expireTime;
-                        item.Retries = item.Retries + 1;
+                        
                         context.Update(item);
                         context.SaveChanges();
                     }
@@ -205,21 +207,23 @@ namespace NVSSClient.Services
                     {
                         case "http://nchs.cdc.gov/vrdr_acknowledgement":
                             AckMessage message = BaseMessage.Parse<AckMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                            ProcessAckMessage(message);
                             Console.WriteLine($"Received ask message: {message.MessageId} for {message.AckedMessageId}");
+                            ProcessAckMessage(message);
                             break;
                         case "http://nchs.cdc.gov/vrdr_coding":
-                            //message = new CodingResponseMessage(bundle);
-                            Console.WriteLine($"Received coding response: {msg.MessageId}");
+                            CodingResponseMessage codeMsg = BaseMessage.Parse<CodingResponseMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                            Console.WriteLine($"Received coding: {codeMsg.MessageId}");
+                            ProcessResponseMessage(codeMsg);
                             break;
                         case "http://nchs.cdc.gov/vrdr_coding_update":
-                            //message = new CodingUpdateMessage(bundle);
-                            Console.WriteLine($"Received coding update: {msg.MessageId}");
+                            CodingUpdateMessage updateMsg = BaseMessage.Parse<CodingUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                            Console.WriteLine($"Received coding update: {updateMsg.MessageId}");
+                            ProcessResponseMessage(updateMsg);
                             break;
                         case "http://nchs.cdc.gov/vrdr_extraction_error":
                             ExtractionErrorMessage errMsg = BaseMessage.Parse<ExtractionErrorMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                            ProcessExtractionErrorMessage(errMsg);
                             Console.WriteLine($"Received extraction error: {errMsg.MessageId}");
+                            ProcessResponseMessage(errMsg);
                             break;
                         default:
                             Console.WriteLine($"Unknown message type");
@@ -248,7 +252,7 @@ namespace NVSSClient.Services
                     original.Status = Models.MessageStatus.Acknowledged.ToString();
                     context.Update(original);
                     context.SaveChanges();
-                    Console.WriteLine($"Successfully acked message {message.AckedMessageId}");
+                    Console.WriteLine($"Successfully acked message {original.Uid}");
                 }
             } catch (Exception e)
             {
@@ -258,8 +262,9 @@ namespace NVSSClient.Services
             }
         }
 
-        // Extraction errors are relevant to specific messages
-        public void ProcessExtractionErrorMessage(ExtractionErrorMessage message)
+        // Process codings, and coding updates 
+        // Coding and updates are relevant to specific messages
+        public void ProcessResponseMessage(BaseMessage message)
         {
             try 
             {
@@ -267,17 +272,40 @@ namespace NVSSClient.Services
                     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                     
                     // check for a duplicate
+                    // if a duplicate resend the ack
                     int count = context.ResponseItems.Where(m => m.Uid == message.MessageId).Count();
                     if (count > 0) {
-                        Console.WriteLine($"Received duplicate message with Id: {message.MessageId}, ignore");
+                        Console.WriteLine($"Received duplicate message with Id: {message.MessageId}, ignore and resend ack");
+                        
+                        // create ACK message for the response
+                        AckMessage ackDuplicate = new AckMessage(message);
+                        Boolean success = Program.PostMessageAsync(BaseMessage.Parse(ackDuplicate.ToJson().ToString(), true));
+                        if (!success)
+                        {
+                            Console.WriteLine($"Failed to send ack for message {message.MessageId}");
+                        }
                         return;
                     }
 
                     // find the message the error is for
-                    var original = context.MessageItems.Where(s => s.DeathJurisdictionID == message.DeathJurisdictionID && s.StateAuxiliaryIdentifier == message.StateAuxiliaryIdentifier).First();
-
-                    // update message status
-                    original.Status = Models.MessageStatus.Error.ToString();
+                    var original = context.MessageItems.Where(s => s.DeathJurisdictionID == message.DeathJurisdictionID && s.StateAuxiliaryIdentifier == message.StateAuxiliaryIdentifier && s.DeathYear == message.DeathYear).FirstOrDefault();
+                    // Update the status
+                    switch (message.MessageType)
+                    {
+                        case "http://nchs.cdc.gov/vrdr_coding":
+                            original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
+                            break;
+                        case "http://nchs.cdc.gov/vrdr_coding_update":
+                            original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
+                            break;
+                        case "http://nchs.cdc.gov/vrdr_extraction_error":
+                            original.Status = Models.MessageStatus.Error.ToString();
+                            break;
+                        default:
+                            // TODO should create an error
+                            Console.WriteLine($"Unknown message type");
+                            break;
+                    }
                     context.Update(original);
 
                     // insert response message in db
@@ -287,12 +315,21 @@ namespace NVSSClient.Services
                     response.CertificateNumber = message.CertificateNumber;
                     response.DeathJurisdictionID = message.DeathJurisdictionID;
                     response.DeathYear = message.DeathYear;
-                    response.Message = message.ToJson();
+                    response.Message = message.ToJson().ToString();
                     context.ResponseItems.Add(response);
 
-                    // TODO create ACK message for the the message and insert into MessageDB
+                    Console.WriteLine("Created response");
+
                     context.SaveChanges();
-                    Console.WriteLine($"Successfully recorded error message {message.MessageId}");
+                    Console.WriteLine($"Successfully recorded {message.MessageType} message {message.MessageId}");
+
+                    // create ACK message for the extraction error
+                    AckMessage ack = new AckMessage(message);
+                    Boolean sent = Program.PostMessageAsync(ack);
+                    if (!sent)
+                    {
+                        Console.WriteLine($"Failed to send ack for message {message.MessageId}");
+                    }
                 }
             } catch (Exception e)
             {
@@ -301,8 +338,5 @@ namespace NVSSClient.Services
                 Console.WriteLine("Message :{0} ",e.Message);
             }
         }
-
-        // Coding response handler
-        // Coding update response handler
     }
 }

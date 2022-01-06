@@ -14,6 +14,7 @@ using System.Linq;
 using Newtonsoft.Json.Linq;
 using VRDR;
 using NVSSClient.Models;
+using NVSSClient.Controllers;
 using NVSSClient.Services;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -27,11 +28,13 @@ using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace NVSSClient.tests {
-    public class TimedServiceShould : IClassFixture<CustomWebApplicationFactory<NVSSClient.Startup>>
+    public class TimedServiceShould : IClassFixture<CustomWebApplicationFactory<NVSSClient.Startup>>, IDisposable
     {
         private readonly CustomWebApplicationFactory<NVSSClient.Startup> _factory;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly HttpClient _client;
+
+        private ServiceProvider _serviceProvider;
  
         public TimedServiceShould(CustomWebApplicationFactory<NVSSClient.Startup> factory)
         {
@@ -40,42 +43,195 @@ namespace NVSSClient.tests {
                 AllowAutoRedirect = false
             });
 
-        }
-
-        [Fact]
-        public void ParseContent_ShouldParseCodedResponse()
-        {
             Console.WriteLine(_factory.Configuration);
-            ServiceProvider serviceProvider = new ServiceCollection()
+            _serviceProvider = new ServiceCollection()
             .AddSingleton<IHostedService, TimedHostedService>()
             .AddDbContext<AppDbContext>(options => options.UseNpgsql("Host=localhost;Username=postgres;Password=mysecretpassword;Database=postgres;"))
             .AddLogging()
             .AddScoped<IConfiguration>(_ => _factory.Configuration)
             .BuildServiceProvider();
 
-            using (var scope = serviceProvider.CreateScope())
+            // Set up the test message
+            using (var scope = _serviceProvider.CreateScope())
+            {
+
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                context.Database.EnsureCreated();
+
+                // Create "Acknowledged" test record to for the response
+                DeathRecord record = new DeathRecord(File.ReadAllText(FixturePath("test-files/json/DeathRecord1.json")));
+                var message = new DeathRecordSubmission(record);
+                message.DeathJurisdictionID = "FL";
+                message.CertificateNumber = 5;
+                message.DeathYear = 2021;
+                message.MessageSource = "https://example.com/jurisdiction/message/endpoint";
+
+                MessageItem item = new MessageItem();
+                item.Uid = message.MessageId;
+                item.Message = message.ToJson().ToString();
+                
+                // Business Identifiers
+                item.StateAuxiliaryIdentifier = message.StateAuxiliaryIdentifier;
+                item.CertificateNumber = message.CertificateNumber;
+                item.DeathJurisdictionID = message.DeathJurisdictionID;
+                item.DeathYear = message.DeathYear;
+                
+                // Status info
+                item.Status = Models.MessageStatus.Acknowledged.ToString();
+                item.Retries = 0;
+                
+                // insert new message
+                context.MessageItems.Add(item);
+                context.SaveChanges();
+            }
+
+        }
+
+        // Removes the test message after the test is finished
+        public void Dispose()
+        {
+            using (var scope = _serviceProvider.CreateScope())
             {
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 context.Database.EnsureCreated();
-                var respItems = context.ResponseItems.Count();
 
-                var timedService = serviceProvider.GetService<IHostedService>() as TimedHostedService;
-                Bundle bundle = GetBundleOfBundleResponses();
-                //Todo use an await
-                timedService.parseBundle(bundle.ToJson());
+                // TODO remove the coding and update responses
+                MessageItem message = context.MessageItems.Where(s => s.DeathJurisdictionID == "FL" && s.CertificateNumber == 5 && s.DeathYear == 2021).FirstOrDefault();
+                context.Remove(message);
 
-                var newRespItems = context.ResponseItems.Count();
-
-                Assert.Equal(1, newRespItems - respItems);
+                context.SaveChanges();
             }
         }
 
-        private Bundle GetBundleOfBundleResponses()
+        [Fact]
+        public void ParseContent_ShouldParseExtractionErrorResponse()
+        {
+
+            int respItems; 
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                context.Database.EnsureCreated();
+                respItems = context.ResponseItems.Count();
+            }
+
+            var timedService = _serviceProvider.GetService<IHostedService>() as TimedHostedService;
+            Bundle bundle = GetBundleOfBundleResponses("test-files/json/ExtractionErrorMessage.json", "http://nchs.cdc.gov/vrdr_extraction_error");
+            //Todo use an await
+            timedService.parseBundle(bundle.ToJson());
+
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                context.Database.EnsureCreated();
+                var newRespItems = context.ResponseItems.Count();
+                Assert.Equal(1, newRespItems - respItems);
+
+                // Clean up, remove the extraction error
+                ResponseItem response = context.ResponseItems.Where(m => m.Uid == "b27d6803-86bc-4ec5-bd43-173951ce362b").FirstOrDefault();
+                context.Remove(response);
+
+                context.SaveChanges();
+            }
+        }
+
+        [Fact]
+        public void ParseContent_ShouldParseCodedResponse()
+        {
+
+            int respItems; 
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                context.Database.EnsureCreated();
+                respItems = context.ResponseItems.Count();
+            }
+
+            var timedService = _serviceProvider.GetService<IHostedService>() as TimedHostedService;
+            Bundle bundle = GetBundleOfBundleResponses("test-files/json/CauseOfDeathCodingMessage.json", "http://nchs.cdc.gov/vrdr_coding");
+            //Todo use an await
+            timedService.parseBundle(bundle.ToJson());
+
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                context.Database.EnsureCreated();
+                var newRespItems = context.ResponseItems.Count();
+                Assert.Equal(1, newRespItems - respItems);
+
+                // Clean up, remove the coding response
+                ResponseItem response = context.ResponseItems.Where(m => m.Uid == "a3a1ff4e-fc50-47eb-b3af-442e5fceadd1").FirstOrDefault();
+                context.Remove(response);
+
+                context.SaveChanges();
+            }
+        }
+
+        [Fact]
+        public void ParseContent_ShouldParseCodingUpdateResponse()
+        {
+
+            int respItems; 
+            using (var scope = _serviceProvider.CreateScope())
+            {
+
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                context.Database.EnsureCreated();
+                respItems = context.ResponseItems.Count();
+            }
+
+            var timedService = _serviceProvider.GetService<IHostedService>() as TimedHostedService;
+            Bundle bundle = GetBundleOfBundleResponses("test-files/json/CodingUpdateMessage.json", "http://nchs.cdc.gov/vrdr_coding_update");
+            //Todo use an await
+            timedService.parseBundle(bundle.ToJson());
+
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                context.Database.EnsureCreated();
+                var newRespItems = context.ResponseItems.Count();
+                Assert.Equal(1, newRespItems - respItems);
+
+                // Clean up, remove the coding update response
+                ResponseItem response = context.ResponseItems.Where(m => m.Uid == "a3a1ff4e-fc50-47eb-b3af-442e5fceadd1").FirstOrDefault();
+                context.Remove(response);
+
+                context.SaveChanges();
+            }
+        }
+
+        private Bundle GetBundleOfBundleResponses(string filePath, string msgType)
         {
             Console.WriteLine("Test parse bundle");
             List<BaseMessage> testMessages = new List<BaseMessage>();
-            ExtractionErrorMessage message = BaseMessage.Parse<ExtractionErrorMessage>(FixtureStream("test-files/json/ExtractionErrorMessage.json"));
-            testMessages.Add(message);
+            switch (msgType)
+            {
+                case "http://nchs.cdc.gov/vrdr_coding":
+                    CodingResponseMessage codedMsg = BaseMessage.Parse<CodingResponseMessage>(FixtureStream(filePath));
+                    codedMsg.DeathJurisdictionID = "FL";
+                    codedMsg.CertificateNumber = 5;
+                    codedMsg.DeathYear = 2021;
+                    testMessages.Add(codedMsg);
+                    break;
+                case "http://nchs.cdc.gov/vrdr_coding_update":
+                    CodingUpdateMessage updateMsg = BaseMessage.Parse<CodingUpdateMessage>(FixtureStream(filePath));
+                    updateMsg.DeathJurisdictionID = "FL";
+                    updateMsg.CertificateNumber = 5;
+                    updateMsg.DeathYear = 2021;
+                    testMessages.Add(updateMsg);
+                    break;
+                case "http://nchs.cdc.gov/vrdr_extraction_error":
+                    ExtractionErrorMessage errorMsg = BaseMessage.Parse<ExtractionErrorMessage>(FixtureStream(filePath));
+                    errorMsg.DeathJurisdictionID = "FL";
+                    errorMsg.CertificateNumber = 5;
+                    errorMsg.DeathYear = 2021;
+                    testMessages.Add(errorMsg);
+                    break;
+                default:
+                    // TODO should create an error
+                    Console.WriteLine($"Unknown message type");
+                    break;
+            }
 
             Bundle responseBundle = new Bundle();
             responseBundle.Type = Bundle.BundleType.Searchset;
