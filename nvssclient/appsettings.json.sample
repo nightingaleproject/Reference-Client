@@ -10,7 +10,7 @@
         "ClientDatabase": "Host=localhost;Username=postgres;Password=mysecretpassword;Database=postgres;",
         "AuthServer": "https://<authtoken-url>",
         "ApiServer": "https://<bundles-endpoint-url>",
-        "LocalServer":"https://localhost:5001/bundles"
+        "LocalServer":"https://localhost:5001/MA/bundles"
     },
     "Authentication": {
         "ClientId": "theclientid",
