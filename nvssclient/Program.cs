@@ -148,11 +148,12 @@ namespace NVSSClient
             else if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
                 // unauthorized, refresh token
+                Console.WriteLine($"Unauthorized error submitting {message.MessageId}, status: {response.StatusCode}");
                 return false;
             }
             else
             {
-                Console.WriteLine($"Error submitting {message.MessageId}");
+                Console.WriteLine($"Error submitting {message.MessageId}, status: {response.StatusCode}");
                 return false;
             }
         }

@@ -68,7 +68,7 @@ This project uses dotnet and docker to run the local database.
     1. Create an `appsettings.json` file from the `appsettings.json.sample` file
     2. In `appsettings.json` set `"LocalTesting" : false`
     3. In `appsettings.json` set `"AuthServer": "https://apigw.cdc.gov/auth/oauth/v2/token"`
-    4. In `appsettings.json` set `"AuthServer": "https://apigw.cdc.gov/OSELS/NCHS/NVSSFHIRAPI/Bundles"`
+    4. In `appsettings.json` set `"AuthServer": "https://apigw.cdc.gov/OSELS/NCHS/NVSSFHIRAPI/<jurisidction-id>/Bundles"`
     5. In `appsettings.json` fill out the `"Authentication"` section to authenticate to the server via oauth, contact admin for your credentials
 3. Set up OAuth 
    1. OAuth is required to authenticate to the NVSS API Server. Contact the NVSS server team to acquire your client id, client secret, username, and password.

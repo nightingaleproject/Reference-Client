@@ -19,6 +19,6 @@
         "Password":"password"
     },
     "LocalTesting" : false,
-    "ResendInterval" : 30,
-    "PollingInterval" : 10
+    "ResendInterval" : 14400,
+    "PollingInterval" : 60
 }
