@@ -150,7 +150,7 @@ This section provides useful information to developers working on the client imp
 1. When applying a new migration, update the Models to reflect the desired changes. 
 2. Stop and remove the container running the current client db
 3. Run `docker-compose up --build` to recreate the db
-   1. You may need to comment out this block in the timed service 
+   1. You may need to comment out this block in Program.cs 
     ```                
         // .ConfigureServices((hostContext, services) =>
         // {

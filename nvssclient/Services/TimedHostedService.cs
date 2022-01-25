@@ -46,8 +46,7 @@ namespace NVSSClient.Services
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 PersistentState dbState = context.PersistentState.Where(s => s.Name == "lastUpdated").FirstOrDefault();
                 if (dbState != null){
-                    String lastUpdated = dbState.Value;
-                    //lastUpdated = lu.ToString("yyyy-MM-ddTHH:mm:ss.fffffff"); // regex? 
+                    lastUpdated = dbState.Value;
                 }
                 Console.WriteLine("LastUpdated: {0}", lastUpdated);
             }
@@ -134,7 +133,7 @@ namespace NVSSClient.Services
                 DateTime currentTime = DateTime.Now;
 
                 // Don't resend ack'd messages or messages in an error state
-                var items = context.MessageItems.Where(s => s.Status != Models.MessageStatus.Acknowledged.ToString() && s.Status != Models.MessageStatus.Error.ToString() && s.ExpirationDate < currentTime).ToList();
+                var items = context.MessageItems.Where(s => s.Status != Models.MessageStatus.Acknowledged.ToString() && s.Status != Models.MessageStatus.AcknowledgedAndCoded.ToString() && s.Status != Models.MessageStatus.Error.ToString() && s.ExpirationDate < currentTime).ToList();
                 foreach (MessageItem item in items)
                 {
                     BaseMessage msg = BaseMessage.Parse(item.Message.ToString(), true);
