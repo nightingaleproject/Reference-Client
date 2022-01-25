@@ -48,7 +48,7 @@ namespace NVSSClient.Services
                 if (dbState != null){
                     lastUpdated = dbState.Value;
                 }
-                Console.WriteLine("LastUpdated: {0}", lastUpdated);
+                Console.WriteLine("*** LastUpdated: {0}", lastUpdated);
             }
         }
         public IConfiguration Configuration { get; }
@@ -206,32 +206,32 @@ namespace NVSSClient.Services
                     {
                         case "http://nchs.cdc.gov/vrdr_acknowledgement":
                             AckMessage message = BaseMessage.Parse<AckMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                            Console.WriteLine($"Received ask message: {message.MessageId} for {message.AckedMessageId}");
+                            Console.WriteLine($"*** Received ack message: {message.MessageId} for {message.AckedMessageId}");
                             ProcessAckMessage(message);
                             break;
                         case "http://nchs.cdc.gov/vrdr_coding":
                             CodingResponseMessage codeMsg = BaseMessage.Parse<CodingResponseMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                            Console.WriteLine($"Received coding: {codeMsg.MessageId}");
+                            Console.WriteLine($"*** Received coding message: {codeMsg.MessageId}");
                             ProcessResponseMessage(codeMsg);
                             break;
                         case "http://nchs.cdc.gov/vrdr_coding_update":
                             CodingUpdateMessage updateMsg = BaseMessage.Parse<CodingUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                            Console.WriteLine($"Received coding update: {updateMsg.MessageId}");
+                            Console.WriteLine($"*** Received coding update message: {updateMsg.MessageId}");
                             ProcessResponseMessage(updateMsg);
                             break;
                         case "http://nchs.cdc.gov/vrdr_extraction_error":
                             ExtractionErrorMessage errMsg = BaseMessage.Parse<ExtractionErrorMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                            Console.WriteLine($"Received extraction error: {errMsg.MessageId}");
+                            Console.WriteLine($"*** Received extraction error: {errMsg.MessageId}");
                             ProcessResponseMessage(errMsg);
                             break;
                         default:
-                            Console.WriteLine($"Unknown message type");
+                            Console.WriteLine($"*** Unknown message type");
                             break;
                     }
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"Error parsing message: {e}");
+                    Console.WriteLine($"*** Error parsing message: {e}");
                 }
             }
         }
@@ -245,19 +245,31 @@ namespace NVSSClient.Services
                     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                     
                     // find the message the ack is for
-                    var original = context.MessageItems.Where(s => s.Uid == message.AckedMessageId).First();
+                    var original = context.MessageItems.Where(s => s.Uid == message.AckedMessageId).FirstOrDefault();
+                    if (original == null)
+                    {
+                        Console.WriteLine($"*** Warning: ACK received for unknown message {message.AckedMessageId}");
+                        return;
+                    }
 
-                    // update message status
-                    original.Status = Models.MessageStatus.Acknowledged.ToString();
-                    context.Update(original);
-                    context.SaveChanges();
-                    Console.WriteLine($"Successfully acked message {original.Uid}");
+                    // update message status if this message was not yet acknowledged
+                    if (original.Status == Models.MessageStatus.Sent.ToString())
+                    {
+                        original.Status = Models.MessageStatus.Acknowledged.ToString();
+                        context.Update(original);
+                        context.SaveChanges();
+                        Console.WriteLine($"*** Successfully acked message {original.Uid}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"*** Ignored acknowledgement for previously acknowledged or coded message {original.Uid}");
+                    }
                 }
             } catch (Exception e)
             {
-                Console.WriteLine($"Error updating message status {message.AckedMessageId}");
-                Console.WriteLine("\nException Caught!");	
-                Console.WriteLine("Message :{0} ",e.Message);
+                Console.WriteLine($"*** Error processing acknowledgement of {message.AckedMessageId}");
+                Console.WriteLine("\nException Caught!");
+                Console.WriteLine("*** Message :{0} ",e.Message);
             }
         }
 
@@ -274,35 +286,44 @@ namespace NVSSClient.Services
                     // if a duplicate resend the ack
                     int count = context.ResponseItems.Where(m => m.Uid == message.MessageId).Count();
                     if (count > 0) {
-                        Console.WriteLine($"Received duplicate message with Id: {message.MessageId}, ignore and resend ack");
+                        Console.WriteLine($"*** Received duplicate message with Id: {message.MessageId}, ignore and resend ack");
                         
                         // create ACK message for the response
                         AckMessage ackDuplicate = new AckMessage(message);
                         Boolean success = Program.PostMessageAsync(BaseMessage.Parse(ackDuplicate.ToJson().ToString(), true));
                         if (!success)
                         {
-                            Console.WriteLine($"Failed to send ack for message {message.MessageId}");
+                            Console.WriteLine($"*** Failed to send ack for message {message.MessageId}");
                         }
                         return;
                     }
 
-                    // find the message the error is for
-                    var original = context.MessageItems.Where(s => s.DeathJurisdictionID == message.DeathJurisdictionID && s.StateAuxiliaryIdentifier == message.StateAuxiliaryIdentifier && s.DeathYear == message.DeathYear).FirstOrDefault();
+                    // find the message the coding response or error is for
+                    var original = context.MessageItems.Where(s => s.DeathJurisdictionID == message.DeathJurisdictionID && s.CertificateNumber == message.CertificateNumber && s.DeathYear == message.DeathYear).FirstOrDefault();
+                    if (original == null)
+                    {
+                        // TODO: We need to consider whether we should send an ACK for this case
+                        Console.WriteLine($"*** Warning: Response received for unknown message {message.MessageId} ({message.DeathYear} {message.DeathJurisdictionID} {message.CertificateNumber})");
+                        return;
+                    }
                     // Update the status
                     switch (message.MessageType)
                     {
                         case "http://nchs.cdc.gov/vrdr_coding":
                             original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
+                            Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2}", message.DeathYear, message.DeathJurisdictionID, message.CertificateNumber);
                             break;
                         case "http://nchs.cdc.gov/vrdr_coding_update":
                             original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
+                            Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2}", message.DeathYear, message.DeathJurisdictionID, message.CertificateNumber);
                             break;
                         case "http://nchs.cdc.gov/vrdr_extraction_error":
                             original.Status = Models.MessageStatus.Error.ToString();
+                            Console.WriteLine("*** Updating status to Error for {0} {1} {2}", message.DeathYear, message.DeathJurisdictionID, message.CertificateNumber);
                             break;
                         default:
                             // TODO should create an error
-                            Console.WriteLine($"Unknown message type");
+                            Console.WriteLine($"*** Unknown message type {message.MessageType}");
                             break;
                     }
                     context.Update(original);
@@ -317,24 +338,22 @@ namespace NVSSClient.Services
                     response.Message = message.ToJson().ToString();
                     context.ResponseItems.Add(response);
 
-                    Console.WriteLine("Created response");
-
                     context.SaveChanges();
-                    Console.WriteLine($"Successfully recorded {message.MessageType} message {message.MessageId}");
+                    Console.WriteLine($"*** Successfully recorded {message.GetType().Name} message {message.MessageId}");
 
                     // create ACK message for the extraction error
                     AckMessage ack = new AckMessage(message);
                     Boolean sent = Program.PostMessageAsync(ack);
                     if (!sent)
                     {
-                        Console.WriteLine($"Failed to send ack for message {message.MessageId}");
+                        Console.WriteLine($"*** Failed to send ack for message {message.MessageId}");
                     }
                 }
             } catch (Exception e)
             {
-                Console.WriteLine($"Error updating message status {message.MessageId}");
-                Console.WriteLine("\nException Caught!");	
-                Console.WriteLine("Message :{0} ",e.Message);
+                Console.WriteLine($"*** Error processing incoming coding or error message {message.MessageId}");
+                Console.WriteLine("\nException Caught!");
+                Console.WriteLine("*** Message :{0} ",e.Message);
             }
         }
     }

@@ -81,7 +81,7 @@ namespace NVSSClient
             }
             
             var address = apiUrl;
-            Console.WriteLine($"Get messages since: {lastUpdated}");
+            Console.WriteLine($">>> Get messages since: {lastUpdated}");
 
             // if not testing locally, add auth
             if (!localDev){
@@ -142,18 +142,18 @@ namespace NVSSClient
             var response = client.PostAsync(apiUrl, data).Result;
             if (response.IsSuccessStatusCode)
             {
-                Console.WriteLine($"Successfully submitted {message.MessageId}");
+                Console.WriteLine($">>> Successfully submitted {message.MessageId} of type {message.GetType().Name}");
                 return true;
             }
             else if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
                 // unauthorized, refresh token
-                Console.WriteLine($"Unauthorized error submitting {message.MessageId}, status: {response.StatusCode}");
+                Console.WriteLine($">>> Unauthorized error submitting {message.MessageId}, status: {response.StatusCode}");
                 return false;
             }
             else
             {
-                Console.WriteLine($"Error submitting {message.MessageId}, status: {response.StatusCode}");
+                Console.WriteLine($">>> Error submitting {message.MessageId}, status: {response.StatusCode}");
                 return false;
             }
         }
