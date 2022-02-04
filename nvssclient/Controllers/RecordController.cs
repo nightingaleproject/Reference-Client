@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using NVSSClient.Models;
 using Npgsql;
@@ -20,8 +21,7 @@ namespace NVSSClient.Controllers
         private readonly AppDbContext _context;
         private readonly IServiceProvider Services;
         private static String cs = "Host=localhost;Username=postgres;Password=mysecretpassword;Database=postgres";
-        private static String jurisdictionEndPoint = "https://example.com/jurisdiction/message/endpoint"; // make part of the configuration
-
+        private readonly String _jurisdictionEndPoint;
         private static NpgsqlConnection con = new NpgsqlConnection(cs);
         private readonly IServiceScopeFactory _scopeFactory;
 
@@ -29,6 +29,7 @@ namespace NVSSClient.Controllers
         {
             _context = context;
             _scopeFactory = scopeFactory;
+            _jurisdictionEndPoint = Startup.StaticConfig.GetValue<string>("JurisdictionEndpoint");
         }
 
         public class RecordResponse
@@ -207,30 +208,38 @@ namespace NVSSClient.Controllers
         }
 
         public void InsertMessageItem(BaseMessage message){
-            using (var scope = _scopeFactory.CreateScope()){
-                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                message.MessageSource = jurisdictionEndPoint;
+            try
+            {
+                using (var scope = _scopeFactory.CreateScope()){
+                    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    message.MessageSource = _jurisdictionEndPoint;
 
-                MessageItem item = new MessageItem();
-                item.Uid = message.MessageId;
-                item.Message = message.ToJson().ToString();
-                
-                // Business Identifiers
-                item.StateAuxiliaryIdentifier = message.StateAuxiliaryIdentifier;
-                item.CertificateNumber = message.CertificateNumber;
-                item.DeathJurisdictionID = message.DeathJurisdictionID;
-                item.DeathYear = message.DeathYear;
-                Console.WriteLine("Business IDs {0}, {1}, {2}", message.DeathYear, message.CertificateNumber, message.DeathJurisdictionID);
-                
-                // Status info
-                item.Status = Models.MessageStatus.Pending.ToString();
-                item.Retries = 0;
-                
-                // insert new message
-                context.MessageItems.Add(item);
-                context.SaveChanges();
-                Console.WriteLine($"Inserted message {item.Uid}");   
+                    MessageItem item = new MessageItem();
+                    item.Uid = message.MessageId;
+                    item.Message = message.ToJson().ToString();
+                    
+                    // Business Identifiers
+                    item.StateAuxiliaryIdentifier = message.StateAuxiliaryIdentifier;
+                    item.CertificateNumber = message.CertificateNumber;
+                    item.DeathJurisdictionID = message.DeathJurisdictionID;
+                    item.DeathYear = message.DeathYear;
+                    Console.WriteLine("Business IDs {0}, {1}, {2}", message.DeathYear, message.CertificateNumber, message.DeathJurisdictionID);
+                    
+                    // Status info
+                    item.Status = Models.MessageStatus.Pending.ToString();
+                    item.Retries = 0;
+                    
+                    // insert new message
+                    context.MessageItems.Add(item);
+                    context.SaveChanges();
+                    Console.WriteLine($"Inserted message {item.Uid}");   
+                }
             }
+            catch 
+            {
+                Console.WriteLine($"Error saving message {message.MessageId} for submission"); 
+            }
+
         }
     }
 }

@@ -45,10 +45,10 @@ namespace NVSSClient.tests {
 
             Console.WriteLine(_factory.Configuration);
             _serviceProvider = new ServiceCollection()
-            .AddSingleton<IHostedService, TimedHostedService>()
             .AddDbContext<AppDbContext>(options => options.UseNpgsql("Host=localhost;Username=postgres;Password=mysecretpassword;Database=postgres;"))
             .AddLogging()
             .AddScoped<IConfiguration>(_ => _factory.Configuration)
+            .AddSingleton<IHostedService, TimedHostedService>()
             .BuildServiceProvider();
 
             // Set up the test message
@@ -195,6 +195,39 @@ namespace NVSSClient.tests {
                 // Clean up, remove the coding update response
                 ResponseItem response = context.ResponseItems.Where(m => m.Uid == "a3a1ff4e-fc50-47eb-b3af-442e5fceadd1").FirstOrDefault();
                 context.Remove(response);
+
+                context.SaveChanges();
+            }
+        }
+
+        [Fact]
+        public void ParseContent_ShouldGenerateExtractionError()
+        {
+
+            int msgItems; 
+            using (var scope = _serviceProvider.CreateScope())
+            {
+
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                context.Database.EnsureCreated();
+                msgItems = context.MessageItems.Count();
+            }
+
+            var timedService = _serviceProvider.GetService<IHostedService>() as TimedHostedService;
+            StreamReader bundleReader = FixtureStream("test-files/json/BundleOfBundlesWithError.json");
+            string bundleJson = bundleReader.ReadToEnd();
+            //Todo use an await
+            // This should result in an extraction error that's added to the MessageItems table
+            timedService.parseBundle(bundleJson);
+
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                context.Database.EnsureCreated();
+                var newMsgItems = context.MessageItems.Count();
+                Assert.Equal(1, newMsgItems - msgItems);
+
+                // We can leave the extraction error 
 
                 context.SaveChanges();
             }
