@@ -34,6 +34,7 @@ namespace NVSSClient.Services
         private readonly ILogger<TimedHostedService> _logger;
         private readonly IServiceScopeFactory _scopeFactory;
         private Timer _timer;
+        private String _jurisdictionEndPoint;
 
         public TimedHostedService(ILogger<TimedHostedService> logger, IServiceScopeFactory scopeFactory, IConfiguration configuration)
         {
@@ -56,6 +57,7 @@ namespace NVSSClient.Services
         {
             _logger.LogInformation("Timed Hosted Service running.");
             int interval = Int32.Parse(Configuration["PollingInterval"]);
+            _jurisdictionEndPoint = Configuration["JurisdictionEndpoint"];
             _timer = new Timer(DoWork, null, TimeSpan.Zero, 
                 TimeSpan.FromSeconds(interval));
 
@@ -201,37 +203,82 @@ namespace NVSSClient.Services
                 try
                 {
                     BaseMessage msg = BaseMessage.Parse<BaseMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                    //Bundle innerbundle = (Hl7.Fhir.Model.Bundle)entry.Resource;
                     switch (msg.MessageType)
                     {
-                        case "http://nchs.cdc.gov/vrdr_acknowledgement":
-                            AckMessage message = BaseMessage.Parse<AckMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                            Console.WriteLine($"*** Received ack message: {message.MessageId} for {message.AckedMessageId}");
-                            ProcessAckMessage(message);
-                            break;
-                        case "http://nchs.cdc.gov/vrdr_coding":
-                            CodingResponseMessage codeMsg = BaseMessage.Parse<CodingResponseMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                            Console.WriteLine($"*** Received coding message: {codeMsg.MessageId}");
-                            ProcessResponseMessage(codeMsg);
-                            break;
-                        case "http://nchs.cdc.gov/vrdr_coding_update":
-                            CodingUpdateMessage updateMsg = BaseMessage.Parse<CodingUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                            Console.WriteLine($"*** Received coding update message: {updateMsg.MessageId}");
-                            ProcessResponseMessage(updateMsg);
-                            break;
-                        case "http://nchs.cdc.gov/vrdr_extraction_error":
-                            ExtractionErrorMessage errMsg = BaseMessage.Parse<ExtractionErrorMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                            Console.WriteLine($"*** Received extraction error: {errMsg.MessageId}");
-                            ProcessResponseMessage(errMsg);
-                            break;
-                        default:
-                            Console.WriteLine($"*** Unknown message type");
-                            break;
+                    case "http://nchs.cdc.gov/vrdr_acknowledgement":
+                        AckMessage message = BaseMessage.Parse<AckMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                        Console.WriteLine($"*** Received ack message: {message.MessageId} for {message.AckedMessageId}");
+                        ProcessAckMessage(message);
+                        break;
+                    case "http://nchs.cdc.gov/vrdr_coding":
+                        CodingResponseMessage codeMsg = BaseMessage.Parse<CodingResponseMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                        Console.WriteLine($"*** Received coding message: {codeMsg.MessageId}");
+                        ProcessResponseMessage(codeMsg);
+                        break;
+                    case "http://nchs.cdc.gov/vrdr_coding_update":
+                        CodingUpdateMessage updateMsg = BaseMessage.Parse<CodingUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                        Console.WriteLine($"*** Received coding update message: {updateMsg.MessageId}");
+                        ProcessResponseMessage(updateMsg);
+                        break;
+                    case "http://nchs.cdc.gov/vrdr_extraction_error":
+                        ExtractionErrorMessage errMsg = BaseMessage.Parse<ExtractionErrorMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                        Console.WriteLine($"*** Received extraction error: {errMsg.MessageId}");
+                        ProcessResponseMessage(errMsg);
+                        break;
+                    default:
+                        Console.WriteLine($"*** Unknown message type");
+                        break;
                     }
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine($"*** Error parsing message: {e}");
+                    // Extraction errors require acks so we insert in the DB to send with other messages to NCHS
+                    // pass in the message Id, the destination endpoint (where it is sent), and the source (where it is sent from)
+                    // wrap in another try catch so we can see any failures in our logs
+                    try 
+                    {
+                        Hl7.Fhir.Model.Bundle innerBundle = (Hl7.Fhir.Model.Bundle)entry.Resource;
+                        var headerEntry = innerBundle.Entry.FirstOrDefault( entry2 => entry2.Resource.ResourceType == ResourceType.MessageHeader );
+                        if (headerEntry == null)
+                        {
+                            throw new System.ArgumentException($"Failed to find a Bundle Entry containing a Message Header");
+                        }
+                        MessageHeader header = (MessageHeader)headerEntry?.Resource;
+                        ExtractionErrorMessage extError = new ExtractionErrorMessage(entry.Resource.Id, header?.Source?.Endpoint, _jurisdictionEndPoint);
+                        
+                        using (var scope = _scopeFactory.CreateScope()){
+                            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                            extError.MessageSource = _jurisdictionEndPoint;
+
+                            MessageItem item = new MessageItem();
+                            item.Uid = extError.MessageId;
+                            item.Message = extError.ToJson().ToString();
+                            
+                            // Business Identifiers
+                            item.StateAuxiliaryIdentifier = extError.StateAuxiliaryIdentifier;
+                            item.CertificateNumber = extError.CertificateNumber;
+                            item.DeathJurisdictionID = extError.DeathJurisdictionID;
+                            item.DeathYear = extError.DeathYear;
+                            Console.WriteLine("Business IDs {0}, {1}, {2}", extError.DeathYear, extError.CertificateNumber, extError.DeathJurisdictionID);
+                            
+                            // Status info
+                            item.Status = Models.MessageStatus.Pending.ToString();
+                            item.Retries = 0;
+                            
+                            // insert new message
+                            context.MessageItems.Add(item);
+                            context.SaveChanges();
+                            Console.WriteLine($"Inserted message {item.Uid}");   
+                        }
+                        Console.WriteLine($"*** Successfully queued extraction error message for message {entry.Resource.Id}");
+                    }
+                    catch (Exception e2)
+                    {
+                        // If we reach this point, the sender should eventually resend the initial message and we will try to create the extraction message again
+                        // If it continues to fail, these logs will track the failures for debugging
+                        Console.WriteLine($"*** Failed to queue extraction error message for message {entry.Resource.Id}, error: {e2} ");
+                    }
                 }
             }
         }
