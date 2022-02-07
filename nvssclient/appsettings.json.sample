@@ -18,6 +18,7 @@
         "Username":"user",
         "Password":"password"
     },
+    "JurisdictionEndpoint": "https://example.com/jurisdiction/message/endpoint",
     "LocalTesting" : false,
     "ResendInterval" : 14400,
     "PollingInterval" : 60
