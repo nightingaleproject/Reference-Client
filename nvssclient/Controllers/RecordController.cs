@@ -41,7 +41,7 @@ namespace NVSSClient.Controllers
         }
 
         // POST: Submission Records
-        // Receives a new record to send to the FHIR API
+        // Wraps each record in a FHIR Submission message and queues the message to be sent to the NVSS API Server
         [HttpPost]
         [Route("submissions")]
         public async Task<ActionResult> SubmissionRecordHandler([FromBody] List<object> textList)
@@ -63,8 +63,8 @@ namespace NVSSClient.Controllers
             return NoContent();
         }
 
-                // POST: Submission Records
-        // Receives a new record to send to the FHIR API
+        // POST: Submission Records
+        // Wraps the record in a FHIR Submission message and queues the message to be sent to the NVSS API Server
         [HttpPost]
         [Route("submission")]
         public async Task<ActionResult> SubmissionRecordHandler([FromBody] object recordJson)
@@ -85,7 +85,7 @@ namespace NVSSClient.Controllers
         }
 
         // POST: Update Records
-        // Receives a record update to send to the FHIR API
+        // Wraps each record in a FHIR Update message and queues the message to be sent to the NVSS API Server
         [HttpPost]
         [Route("updates")]
         public async Task<ActionResult> UpdateRecordHandler([FromBody] List<object> textList)
@@ -108,7 +108,7 @@ namespace NVSSClient.Controllers
         }
 
         // POST: Update Records
-        // Receives a record update to send to the FHIR API
+        //Wraps the record in a FHIR Update message and queues the message to be sent to the NVSS API Server
         [HttpPost]
         [Route("update")]
         public async Task<ActionResult> UpdateRecordHandler([FromBody] object recordJson)
@@ -129,7 +129,7 @@ namespace NVSSClient.Controllers
         }
 
         // POST: Void Records
-        // Receives a record void to send to the FHIR API
+        // Wraps each record in a FHIR Void message and queues the message to be sent to the NVSS API Server
         [HttpPost]
         [Route("voids")]
         public async Task<ActionResult> VoidRecordHandler([FromBody] List<object> textList)
@@ -152,7 +152,7 @@ namespace NVSSClient.Controllers
         }
 
         // POST: Void Records
-        // Receives a record void to send to the FHIR API
+        // Wraps the record in a FHIR Void message and queues the message to be sent to the NVSS API Server
         [HttpPost]
         [Route("void")]
         public async Task<ActionResult> VoidRecordHandler([FromBody] object recordJson)
@@ -170,8 +170,11 @@ namespace NVSSClient.Controllers
             return NoContent();
         }
 
-        // TODO should the responses include the full response history? or just the latest response, probably just the response
         // GET: Record Status
+        // Retrieves the most recent MessageItem with business identifiers that match the provided parameters
+        // deathYear: the year of death in the VRDR record
+        // jurisditionId: the jurisdiction Id in the VRDR record
+        // certNo: the 5 digit certificate number in the VRDR record
         [HttpGet("status/{deathYear}/{jurisdictionId}/{certNo}")]
         public async Task<ActionResult<RecordResponse>> GetRecordStatus(uint deathYear, string jurisdictionId, string certNo)
         {
@@ -207,6 +210,7 @@ namespace NVSSClient.Controllers
 
         }
 
+        // InsertMessageItem inserts the given message into the MessageItem table to get picked up by the TimedHostedService
         public void InsertMessageItem(BaseMessage message){
             try
             {

@@ -24,18 +24,19 @@ namespace NVSSClient
         {
             services.AddMemoryCache();
             services.AddMiniProfiler(options => options.RouteBasePath = "/profiler").AddEntityFramework();
-            // configure your db here, this example uses postgres
-            // Postgres
+            
+            // Configure your db here, this example uses Postgres, MySql and SQL server examples are provided
+            // *** Postgres ***
             services.AddDbContext<AppDbContext>(options => options.UseNpgsql(Configuration.GetConnectionString("ClientDatabase")));
-            // MySql
+            // *** MySql ***
             //services.AddDbContext<AppContext>(options => options.UseMySql(Configuration.GetConnectionString("ClientDatabase")));
-            // SQL server
+            // *** SQL server ***
             //services.AddDbContext<AppContext>(options => options.UseSqlServer(Configuration.GetConnectionString("ClientDatabase")));
             
             services.AddControllers();
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        // This method gets called by the runtime. We use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseMiniProfiler();

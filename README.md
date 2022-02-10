@@ -4,7 +4,7 @@ NCHS is working to modernize the national collection and exchange of mortality d
 # Reference Client API
 The Reference Client API is an example implementation for jurisdications that handles submitting VRDR FHIR Messages, reliable delivery (acknowledgements and retries), and retrieving message responses from the [NVSS API server](https://github.com/nightingaleproject/Reference-NCHS-API). The implementation follows the [FHIR Messaging IG](http://build.fhir.org/ig/nightingaleproject/vital_records_fhir_messaging_ig/branches/main/message.html). The reference implementation is developed for .NET using C# and leverages the [vrdr-dotnet](https://github.com/nightingaleproject/vrdr-dotnet) library to create and parse FHIR Messages.
 
-The client is responsible for interacting with the NVSS API server so jurisdictions do not need to repeat the same implementation. The client abstracts away the reliable message delivery and retrieval between the client and NVSS API server. It provides its own API interface to jurisdictions to simplify their workflow. 
+The client is responsible for interacting with the NVSS API server so jurisdictions do not need to duplicate work when building their own client. The client abstracts away the reliable message delivery and retrieval between the client and NVSS API server. It provides its own API interface to jurisdictions to simplify their workflow. 
 
 # Use Cases
 This client can be used to test and demo messaging between the client and the NVSS API Server using the FHIR Messaging IG format. It can also be used as a reference for jurisdictions building their own client implementation.
@@ -13,7 +13,20 @@ This client can be used to test and demo messaging between the client and the NV
 <img src="resources/architecture.png" alt="drawing" width="750"/>  
 
 ### Architecture Description
-The client implementation runs a service that submits messages to the NVSS API and retrieves responses to make available to jurisdictions. The service handles reliable delivery, resends, and parsing so jurisdictions do not need to implement a custom service. The service sits between the jurisdiction's system and the NVSS API Server. The VRDR reporter sends a JSON vrdr record via `POST` to the client's `/record/submission`, `/record/update`, or `/record/void` endpoint. Upon receipt, the client converts the json to a VRDR record, wraps it in a FHIR Message and inserts it in the `MessageItem` table. The client's `TimedService` pulls new messages from the `MessageItem` table every X-configured seconds and POSTs the message to NVSS API Server. Next, the `TimedService` makes a `GET` request for any new messages from the NVSS API Server. The `TimedService` parses the response messages and stores them in the `ResponseItems` table. If there was an acknowledgement or error, it updates the corresponding message in the `MessageItem` table with the new message status. Finally, the `TimedService` checks for any messages that have not received an acknowledgement in Y-configured seconds and resubmits them. The TimedService runs these three steps in sequence every X-configured seconds. The frequencies of X and Y are configurable. The VRDR reporter sends a `GET` request to the `/record/status/{deathYear}/{jurisdictionId}/{certNo}` endpoint at any time to get the status of the message with the provided business identifiers for death year, jurisdiction id, and certificate number. Note that if a submission message was sent, followed by an update message with the same business identifiers, the returned status will be for the latest message inserted into the database, in this case the update message status. 
+The client implementation runs a service that submits messages to the NVSS API and retrieves responses to make available to jurisdictions. The service handles reliable delivery, resends, and parsing so jurisdictions do not need to implement a custom service. The service sits between the jurisdiction's system and the NVSS API Server.  
+Example workflow
+- The VRDR reporter sends a JSON vrdr record via `POST` to the client's `/record/submission`, `/record/update`, or `/record/void` endpoint
+- Upon receipt, the client converts the json to a VRDR record, wraps it in a FHIR Message and inserts it in the `MessageItem` table
+- The client's `TimedService` pulls new messages from the `MessageItem` table every X-configured seconds and POSTs the message to NVSS API Server
+- Next, the `TimedService` makes a `GET` request for any new messages from the NVSS API Server
+- The `TimedService` parses the response messages and stores them in the `ResponseItems` table
+  - If there was an acknowledgement or error, it updates the corresponding message in the `MessageItem` table with the new message status
+- Finally, the `TimedService` checks for any messages that have not received an acknowledgement in Y-configured seconds and resubmits them
+  - The TimedService runs these three steps in sequence every X-configured seconds
+  - The frequencies of X and Y are configurable
+- The VRDR reporter sends a `GET` request to the `/record/status/{deathYear}/{jurisdictionId}/{certNo}` endpoint at any time to get the status of the message with the provided business identifiers for death year, jurisdiction id, and certificate number
+
+Note that if a submission message was sent, followed by an update message with the same business identifiers, the returned status will be for the latest message inserted into the database, in this case the update message status. 
 
 # API Endpoints
 The client implementation has endpoints to submit VRDR records, update records, and void records. It also has an endpoint to retrieve the status and response of a given record.
@@ -167,11 +180,10 @@ This section provides useful information to developers working on the client imp
 
 ## Developer Notes and Justifications
 - To persist data and make it available to the Jurisidction upon request, the full response message is stored in the ResponseItems table, rather than just the ID in a Message Log. The ResponseItem table serves as the Message Log, see [FHIR Messaging IG](http://build.fhir.org/ig/nightingaleproject/vital_records_fhir_messaging_ig/branches/main/message.html)
-- The `POST /record` end point does not return data because the submission and coding process takes to long to provide a synchronous response. The user can request the message status via the `GET /record` endpoint. 
+- The `POST /record` end point does not return data because the submission and coding process takes too long to provide a synchronous response. The user can request the message status via the `GET /record` endpoint. 
 
 Down the road tasks and questions
-- Fix the issue when applying new migrations that requires temporarily commenting out the TimedService
-- What state will the jurisdictions want to keep track of? If they use a native format, they will have two versions of the same record
-- Potential adapter for handling different formats?
-- TODO send an ack when you get a coding response or extraction error
-- do they want to see all responses over time? should old messages be cleared out after an expiration date
+- Existing issue when applying new migrations requires temporarily commenting out the TimedService
+- Need to consider the state jurisdictions will keep track of, ex if using a native format, there may be two versions of the same record
+  - Consider a potential adapter for handling different formats
+- Request feedback on the status endpoint, should messages be cleared out over time
