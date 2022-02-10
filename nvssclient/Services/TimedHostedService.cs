@@ -23,8 +23,8 @@ using VRDR;
 namespace NVSSClient.Services
 {
         
-    // a timed service that runs every x seconds to pull new messages from the db and submit, 
-    // check for responses, resend messages that haven't had a response in x time
+    // The TimedHostedService runs every x seconds to pull new messages from the db, submit to the NVSS FHIR API Server, 
+    // check for responses, and resend messages that haven't had a response in x time
     public class TimedHostedService : IHostedService, IDisposable
     {
         private static String lastUpdated = new DateTime().ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
@@ -42,7 +42,7 @@ namespace NVSSClient.Services
             _scopeFactory = scopeFactory;
             Configuration = configuration;
             
-            // Check for persistent data 
+            // Check the persistent data for the last updated timestamp 
             using (var scope = _scopeFactory.CreateScope()){
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                 PersistentState dbState = context.PersistentState.Where(s => s.Name == "lastUpdated").FirstOrDefault();
@@ -53,6 +53,8 @@ namespace NVSSClient.Services
             }
         }
         public IConfiguration Configuration { get; }
+
+        // StartAsync initializes the timed hosted services and sets the time interval
         public System.Threading.Tasks.Task StartAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Timed Hosted Service running.");
@@ -64,6 +66,7 @@ namespace NVSSClient.Services
             return System.Threading.Tasks.Task.CompletedTask;
         }
 
+        // DoWork runs at each time interval
         private void DoWork(object state)
         {
             var count = Interlocked.Increment(ref executionCount);
@@ -79,6 +82,7 @@ namespace NVSSClient.Services
             ResendMessages();
         }
 
+        // StopAsync stops the timed hosted service
         public System.Threading.Tasks.Task StopAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Timed Hosted Service is stopping.");
@@ -93,8 +97,7 @@ namespace NVSSClient.Services
             _timer?.Dispose();
         }
 
-        // Retrieve records from database and send to the endpoint
-
+        // SubmitNewMessages retrieves new Messages from the database and sends them to the NVSS FHIR API
         public void SubmitNewMessages()
         {
             // scope the db context, its not meant to last the whole life cycle
@@ -102,7 +105,7 @@ namespace NVSSClient.Services
             using (var scope = _scopeFactory.CreateScope()){
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                
-                // Send messages that have not yet been sent
+                // Send Messages that have not yet been sent, i.e. status is "Pending"
                 var items = context.MessageItems.Where(s => s.Status == Models.MessageStatus.Pending.ToString()).ToList();
                 foreach (MessageItem item in items)
                 {
@@ -119,11 +122,12 @@ namespace NVSSClient.Services
                         context.Update(item);
                         context.SaveChanges();
                     }
-                    // TODO do we need to capture errors in the db?
                 }
             } //scope (and context) gets destroyed here
         }
 
+        // ResendMessages supports reliable delivery of messages, it finds Messages in the DB that have not been acknowledged 
+        // and have exceeded their expiration date. It resends the selected Messages to the NVSS FHIR API
         public void ResendMessages()
         {
             // scope the db context, its not meant to last the whole life cycle
@@ -131,10 +135,9 @@ namespace NVSSClient.Services
             using (var scope = _scopeFactory.CreateScope()){
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                
-                // only get unacknowledged ones that have expired
-                DateTime currentTime = DateTime.Now;
-
+                // Only selected unacknowledged Messages that have expired
                 // Don't resend ack'd messages or messages in an error state
+                DateTime currentTime = DateTime.Now;
                 var items = context.MessageItems.Where(s => s.Status != Models.MessageStatus.Acknowledged.ToString() && s.Status != Models.MessageStatus.AcknowledgedAndCoded.ToString() && s.Status != Models.MessageStatus.Error.ToString() && s.ExpirationDate < currentTime).ToList();
                 foreach (MessageItem item in items)
                 {
@@ -145,7 +148,7 @@ namespace NVSSClient.Services
                         item.Status = Models.MessageStatus.Sent.ToString();
                         item.Retries = item.Retries + 1;
                         DateTime sentTime = DateTime.Now;
-                        // exponential backoff multiplies the resend interval by the number of retries
+                        // the exponential backoff multiplies the resend interval by the number of retries
                         int resend = Int32.Parse(Configuration["ResendInterval"]) * item.Retries;
                         TimeSpan resendWindow = new TimeSpan(0,0,0,resend);
                         DateTime expireTime = sentTime.Add(resendWindow);
@@ -158,9 +161,11 @@ namespace NVSSClient.Services
             } //scope (and context) gets destroyed here
         }
 
+        // PollForResponses makes a GET request to the NVSS FHIR API server for new Messages
+        // the became available since the lastUpdated time stamp
         private void PollForResponses()
         {
-            // Get the datetime now so we don't risk losing any messages, we might get duplicates but we can filter them out
+            // Get the datetime now so we don't risk missing any messages, we might get duplicates but we can filter them out
             DateTime nextUpdated = DateTime.Now;
             var content = Program.GetMessageResponsesAsync(lastUpdated);
             if (!String.IsNullOrEmpty(content))
@@ -171,7 +176,7 @@ namespace NVSSClient.Services
             SaveTimestamp(lastUpdated);
         }
 
-        // Save the last updated timestamp to persist so we don't get repeat messages on a restart
+        // SaveTimestamp saves the last updated timestamp to the persistent database so we don't get repeat messages on a restart
         private void SaveTimestamp(String now)
         {
             using (var scope = _scopeFactory.CreateScope()){
@@ -193,7 +198,7 @@ namespace NVSSClient.Services
             }
         }
 
-        // parses the bundle of bundles from nchs and processes each message response
+        // ParseBundle parses the bundle of bundles from NVSS FHIR API server and processes each message response
         public void parseBundle(String bundleOfBundles){
             FhirJsonParser parser = new FhirJsonParser();
             Bundle bundle = parser.Parse<Bundle>(bundleOfBundles);
@@ -233,9 +238,8 @@ namespace NVSSClient.Services
                 catch (Exception e)
                 {
                     Console.WriteLine($"*** Error parsing message: {e}");
-                    // Extraction errors require acks so we insert in the DB to send with other messages to NCHS
-                    // pass in the message Id, the destination endpoint (where it is sent), and the source (where it is sent from)
-                    // wrap in another try catch so we can see any failures in our logs
+                    // Extraction errors require acks so we insert them in the DB to send with other messages to NCHS
+                    // Wrap this in another try catch so we can see any failures to create the extraction error in our logs
                     try 
                     {
                         Hl7.Fhir.Model.Bundle innerBundle = (Hl7.Fhir.Model.Bundle)entry.Resource;
@@ -245,6 +249,8 @@ namespace NVSSClient.Services
                             throw new System.ArgumentException($"Failed to find a Bundle Entry containing a Message Header");
                         }
                         MessageHeader header = (MessageHeader)headerEntry?.Resource;
+                        // to create the extraction error, pass in the message Id, 
+                        // the destination endpoint, and the source 
                         ExtractionErrorMessage extError = new ExtractionErrorMessage(entry.Resource.Id, header?.Source?.Endpoint, _jurisdictionEndPoint);
                         
                         using (var scope = _scopeFactory.CreateScope()){
@@ -275,15 +281,17 @@ namespace NVSSClient.Services
                     }
                     catch (Exception e2)
                     {
-                        // If we reach this point, the sender should eventually resend the initial message and we will try to create the extraction message again
-                        // If it continues to fail, these logs will track the failures for debugging
+                        // If we reach this point, the FHIR API Server should eventually resend the initial message 
+                        // and we will try to process it again.
+                        // If the parsing continues to fail, these logs will track the failures for debugging
                         Console.WriteLine($"*** Failed to queue extraction error message for message {entry.Resource.Id}, error: {e2} ");
                     }
                 }
             }
         }
 
-        // Acknowledgements are relevant to specific messages, not a message series (coding response, updates)
+        // ProcessAckMessage parses an AckMessage from the server
+        // and updates the status of the Message it acknowledged. 
         public void ProcessAckMessage(AckMessage message)
         {
             try 
@@ -320,8 +328,7 @@ namespace NVSSClient.Services
             }
         }
 
-        // Process codings, and coding updates 
-        // Coding and updates are relevant to specific messages
+        // ProcessResponseMessage processes codings, coding updates, and extraction errors
         public void ProcessResponseMessage(BaseMessage message)
         {
             try 
@@ -329,8 +336,8 @@ namespace NVSSClient.Services
                 using (var scope = _scopeFactory.CreateScope()){
                     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                     
-                    // check for a duplicate
-                    // if a duplicate resend the ack
+                    // check if this response message is a duplicate
+                    // if it is a duplicate resend the ack
                     int count = context.ResponseItems.Where(m => m.Uid == message.MessageId).Count();
                     if (count > 0) {
                         Console.WriteLine($"*** Received duplicate message with Id: {message.MessageId}, ignore and resend ack");
@@ -345,11 +352,11 @@ namespace NVSSClient.Services
                         return;
                     }
 
-                    // find the message the coding response or error is for
+                    // find the latest Message with the same business identifiers as the coding response
                     var original = context.MessageItems.Where(s => s.DeathJurisdictionID == message.DeathJurisdictionID && s.CertificateNumber == message.CertificateNumber && s.DeathYear == message.DeathYear).FirstOrDefault();
                     if (original == null)
                     {
-                        // TODO: We need to consider whether we should send an ACK for this case
+                        // TODO determine if an error message should be sent in this case
                         Console.WriteLine($"*** Warning: Response received for unknown message {message.MessageId} ({message.DeathYear} {message.DeathJurisdictionID} {message.CertificateNumber})");
                         return;
                     }

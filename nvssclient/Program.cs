@@ -37,6 +37,9 @@ namespace NVSSClient
         
         public IConfiguration Configuration { get; }
         static HttpClient client = new HttpClient();
+
+        // GetAutorizeToken retrieves a token from the server to authenticate to the API Gateway
+        // The credentials used to get the token are parsed from appsettings.json
         public static String GetAuthorizeToken()
         {
             
@@ -44,6 +47,7 @@ namespace NVSSClient
             var rclient = new RestClient(authUrl);
             var request = new RestRequest(Method.POST);
 
+            // add credentials to the request
             string clientId = Startup.StaticConfig.GetValue<string>("Authentication:ClientId");
             string clientSecret = Startup.StaticConfig.GetValue<string>("Authentication:ClientSecret");
             string username = Startup.StaticConfig.GetValue<string>("Authentication:Username");
@@ -54,9 +58,10 @@ namespace NVSSClient
             
             IRestResponse response = rclient.Execute(request);
             string content = response.Content;
+
+            // parse the response to get the access token
             if (!String.IsNullOrEmpty(content))
             {
-                //read response 
                 JObject json = JObject.Parse(content);
                 if (json["access_token"] != null)
                 {
@@ -68,7 +73,8 @@ namespace NVSSClient
             return "";
         }
 
-        // GET request to the API server for any new messages
+        // GetMessageResponsesAsync makes a GET request to the NVSS FHIR API server for new messages
+        // responses since the provided timestamp
         public static String GetMessageResponsesAsync(String lastUpdated)
         {
             
@@ -83,7 +89,7 @@ namespace NVSSClient
             var address = apiUrl;
             Console.WriteLine($">>> Get messages since: {lastUpdated}");
 
-            // if not testing locally, add auth
+            // if testing against the NVSS FHIR API server, add the authentication token
             if (!localDev){
                 if (String.IsNullOrEmpty(token))
                 {
@@ -112,7 +118,7 @@ namespace NVSSClient
 
         }
 
-        // POSTS a message to the API server
+        // PostMessageAsync POSTS a single message to the NVSS FHIR API server for processing
         public static Boolean PostMessageAsync(BaseMessage message)
         {
             string apiUrl = Startup.StaticConfig.GetConnectionString("ApiServer");
@@ -124,12 +130,10 @@ namespace NVSSClient
             }
 
             var json = message.ToJSON();
-
             var data = new StringContent(json, Encoding.UTF8, "application/json");
-
             using var client = new HttpClient();
 
-            // if not testing locally, add auth
+            // if testing against the NVSS FHIR API server, add the authentication token
             if (!localDev){
                 if (String.IsNullOrEmpty(token))
                 {
