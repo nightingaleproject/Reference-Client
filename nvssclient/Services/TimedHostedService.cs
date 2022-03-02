@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NVSSClient.Models;
 using NVSSClient.Controllers;
+using nvssclient.lib;
 using Hl7.Fhir.Serialization;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.ElementModel;
@@ -28,8 +29,7 @@ namespace NVSSClient.Services
     public class TimedHostedService : IHostedService, IDisposable
     {
         private static String lastUpdated = new DateTime().ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
-        static readonly HttpClient client = new HttpClient();
-
+        private Client client;
         private int executionCount = 0;
         private readonly ILogger<TimedHostedService> _logger;
         private readonly IServiceScopeFactory _scopeFactory;
@@ -45,12 +45,28 @@ namespace NVSSClient.Services
             // Check the persistent data for the last updated timestamp 
             using (var scope = _scopeFactory.CreateScope()){
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                PersistentState dbState = context.PersistentState.Where(s => s.Name == "lastUpdated").FirstOrDefault();
+                PersistentState dbState = context.PersistentState.OrderBy(p => p.CreatedDate).FirstOrDefault();
                 if (dbState != null){
-                    lastUpdated = dbState.Value;
+                    lastUpdated = dbState.LastUpdated.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
                 }
                 Console.WriteLine("*** LastUpdated: {0}", lastUpdated);
             }
+
+            // Parse the credentials config
+            String authUrl = Startup.StaticConfig.GetConnectionString("AuthServer");
+            string clientId = Startup.StaticConfig.GetValue<string>("Authentication:ClientId");
+            string clientSecret = Startup.StaticConfig.GetValue<string>("Authentication:ClientSecret");
+            string username = Startup.StaticConfig.GetValue<string>("Authentication:Username");
+            string pass = Startup.StaticConfig.GetValue<string>("Authentication:Password");
+            Credentials creds = new Credentials(authUrl, clientId, clientSecret, username, pass);
+
+            // Parse the config to create the client instance
+            string apiUrl = Startup.StaticConfig.GetConnectionString("ApiServer");
+            Boolean localDev = Startup.StaticConfig.GetValue<Boolean>("LocalTesting");
+            if (localDev) {
+                apiUrl = Startup.StaticConfig.GetConnectionString("LocalServer");
+            }
+            client = new Client(apiUrl, localDev, creds);
         }
         public IConfiguration Configuration { get; }
 
@@ -110,11 +126,11 @@ namespace NVSSClient.Services
                 foreach (MessageItem item in items)
                 {
                     BaseMessage msg = BaseMessage.Parse(item.Message.ToString(), true);
-                    Boolean success = Program.PostMessageAsync(msg);
+                    Boolean success = client.PostMessageAsync(msg);
                     if (success)
                     {
                         item.Status = Models.MessageStatus.Sent.ToString();          
-                        DateTime currentTime = DateTime.Now;
+                        DateTime currentTime = DateTime.UtcNow;
                         int resend = Int32.Parse(Configuration["ResendInterval"]);
                         TimeSpan resendWindow = new TimeSpan(0,0,0,resend);
                         DateTime expireTime = currentTime.Add(resendWindow);
@@ -137,17 +153,17 @@ namespace NVSSClient.Services
                
                 // Only selected unacknowledged Messages that have expired
                 // Don't resend ack'd messages or messages in an error state
-                DateTime currentTime = DateTime.Now;
+                DateTime currentTime = DateTime.UtcNow;
                 var items = context.MessageItems.Where(s => s.Status != Models.MessageStatus.Acknowledged.ToString() && s.Status != Models.MessageStatus.AcknowledgedAndCoded.ToString() && s.Status != Models.MessageStatus.Error.ToString() && s.ExpirationDate < currentTime).ToList();
                 foreach (MessageItem item in items)
                 {
                     BaseMessage msg = BaseMessage.Parse(item.Message.ToString(), true);
-                    Boolean success = Program.PostMessageAsync(msg);
+                    Boolean success = client.PostMessageAsync(msg);
                     if (success)
                     {
                         item.Status = Models.MessageStatus.Sent.ToString();
                         item.Retries = item.Retries + 1;
-                        DateTime sentTime = DateTime.Now;
+                        DateTime sentTime = DateTime.UtcNow;
                         // the exponential backoff multiplies the resend interval by the number of retries
                         int resend = Int32.Parse(Configuration["ResendInterval"]) * item.Retries;
                         TimeSpan resendWindow = new TimeSpan(0,0,0,resend);
@@ -166,38 +182,38 @@ namespace NVSSClient.Services
         private void PollForResponses()
         {
             // Get the datetime now so we don't risk missing any messages, we might get duplicates but we can filter them out
-            DateTime nextUpdated = DateTime.Now;
-            var content = Program.GetMessageResponsesAsync(lastUpdated);
+            DateTime nextUpdated = DateTime.UtcNow;
+            var content = client.GetMessageResponsesAsync(lastUpdated);
             if (!String.IsNullOrEmpty(content))
             {
                 parseBundle(content);
             }
+            SaveTimestamp(nextUpdated);
             lastUpdated = nextUpdated.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
-            SaveTimestamp(lastUpdated);
         }
 
         // SaveTimestamp saves the last updated timestamp to the persistent database so we don't get repeat messages on a restart
-        private void SaveTimestamp(String now)
+        private void SaveTimestamp(DateTime now)
         {
             using (var scope = _scopeFactory.CreateScope()){
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                PersistentState dbState = context.PersistentState.Where(s => s.Name == "lastUpdated").FirstOrDefault();
+                PersistentState dbState = context.PersistentState.FirstOrDefault();
                 if (dbState == null)
                 {
                     dbState = new PersistentState();
-                    dbState.Name = "lastUpdated";
-                    dbState.Value = now;
+                    dbState.LastUpdated = now;
                     context.PersistentState.Add(dbState);
                     context.SaveChanges();
                     return;
                 }
                 // update the time
-                dbState.Value = now;
+                dbState.LastUpdated = now;
                 context.Update(dbState);
                 context.SaveChanges();
             }
         }
 
+        // TODO move to library?
         // ParseBundle parses the bundle of bundles from NVSS FHIR API server and processes each message response
         public void parseBundle(String bundleOfBundles){
             FhirJsonParser parser = new FhirJsonParser();
@@ -290,6 +306,7 @@ namespace NVSSClient.Services
             }
         }
 
+        // TODO move to library?
         // ProcessAckMessage parses an AckMessage from the server
         // and updates the status of the Message it acknowledged. 
         public void ProcessAckMessage(AckMessage message)
@@ -328,6 +345,7 @@ namespace NVSSClient.Services
             }
         }
 
+        // TODO move to library?
         // ProcessResponseMessage processes codings, coding updates, and extraction errors
         public void ProcessResponseMessage(BaseMessage message)
         {
@@ -344,7 +362,7 @@ namespace NVSSClient.Services
                         
                         // create ACK message for the response
                         AckMessage ackDuplicate = new AckMessage(message);
-                        Boolean success = Program.PostMessageAsync(BaseMessage.Parse(ackDuplicate.ToJson().ToString(), true));
+                        Boolean success = client.PostMessageAsync(BaseMessage.Parse(ackDuplicate.ToJson().ToString(), true));
                         if (!success)
                         {
                             Console.WriteLine($"*** Failed to send ack for message {message.MessageId}");
@@ -397,7 +415,7 @@ namespace NVSSClient.Services
 
                     // create ACK message for the extraction error
                     AckMessage ack = new AckMessage(message);
-                    Boolean sent = Program.PostMessageAsync(ack);
+                    Boolean sent = client.PostMessageAsync(ack);
                     if (!sent)
                     {
                         Console.WriteLine($"*** Failed to send ack for message {message.MessageId}");

@@ -16,13 +16,10 @@ using NVSSClient.Services;
 namespace NVSSClient
 {
     class Program{
-        private static String token = "";
         public static void Main(string[] args) 
         {
             CreateHostBuilder(args).Build().Run();
         }
-        
-
         // EF Core uses this method at design time to access the DbContext   
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
@@ -36,130 +33,5 @@ namespace NVSSClient
                 });
         
         public IConfiguration Configuration { get; }
-        static HttpClient client = new HttpClient();
-
-        // GetAutorizeToken retrieves a token from the server to authenticate to the API Gateway
-        // The credentials used to get the token are parsed from appsettings.json
-        public static String GetAuthorizeToken()
-        {
-            
-            String authUrl = Startup.StaticConfig.GetConnectionString("AuthServer");
-            var rclient = new RestClient(authUrl);
-            var request = new RestRequest(Method.POST);
-
-            // add credentials to the request
-            string clientId = Startup.StaticConfig.GetValue<string>("Authentication:ClientId");
-            string clientSecret = Startup.StaticConfig.GetValue<string>("Authentication:ClientSecret");
-            string username = Startup.StaticConfig.GetValue<string>("Authentication:Username");
-            string pass = Startup.StaticConfig.GetValue<string>("Authentication:Password");
-            String paramString = String.Format("grant_type=password&client_id={0}&client_secret={1}&username={2}&password={3}", clientId, clientSecret, username, pass);
-            request.AddHeader("content-type", "application/x-www-form-urlencoded");
-            request.AddParameter("application/x-www-form-urlencoded", paramString, ParameterType.RequestBody);
-            
-            IRestResponse response = rclient.Execute(request);
-            string content = response.Content;
-
-            // parse the response to get the access token
-            if (!String.IsNullOrEmpty(content))
-            {
-                JObject json = JObject.Parse(content);
-                if (json["access_token"] != null)
-                {
-                    String newtoken = json["access_token"].ToString();
-                    return newtoken;
-                }
-                
-            }
-            return "";
-        }
-
-        // GetMessageResponsesAsync makes a GET request to the NVSS FHIR API server for new messages
-        // responses since the provided timestamp
-        public static String GetMessageResponsesAsync(String lastUpdated)
-        {
-            
-            string apiUrl = Startup.StaticConfig.GetConnectionString("ApiServer");
-
-            // check if testing locally
-            Boolean localDev = Startup.StaticConfig.GetValue<Boolean>("LocalTesting");
-            if (localDev) {
-                apiUrl = Startup.StaticConfig.GetConnectionString("LocalServer");
-            }
-            
-            var address = apiUrl;
-            Console.WriteLine($">>> Get messages since: {lastUpdated}");
-
-            // if testing against the NVSS FHIR API server, add the authentication token
-            if (!localDev){
-                if (String.IsNullOrEmpty(token))
-                {
-                    token = GetAuthorizeToken();
-                }
-                string authorization = token;
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authorization);
-            }
-
-            if (lastUpdated != null){
-                address = apiUrl + "?lastUpdated=" + lastUpdated;
-            }
-            var response = client.GetAsync(address).Result;
-            
-            if (response.IsSuccessStatusCode)
-            {
-                var content = response.Content.ReadAsStringAsync().Result;
-                Console.WriteLine(content);
-                return content;
-            }
-            else
-            {
-                Console.WriteLine(response.StatusCode);
-                return "";
-            }
-
-        }
-
-        // PostMessageAsync POSTS a single message to the NVSS FHIR API server for processing
-        public static Boolean PostMessageAsync(BaseMessage message)
-        {
-            string apiUrl = Startup.StaticConfig.GetConnectionString("ApiServer");
-
-            // check if testing locally
-            Boolean localDev = Startup.StaticConfig.GetValue<Boolean>("LocalTesting");
-            if (localDev) {
-                apiUrl = Startup.StaticConfig.GetConnectionString("LocalServer");
-            }
-
-            var json = message.ToJSON();
-            var data = new StringContent(json, Encoding.UTF8, "application/json");
-            using var client = new HttpClient();
-
-            // if testing against the NVSS FHIR API server, add the authentication token
-            if (!localDev){
-                if (String.IsNullOrEmpty(token))
-                {
-                    token = GetAuthorizeToken();
-                }
-                string authorization = token;
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authorization);
-            }
-
-            var response = client.PostAsync(apiUrl, data).Result;
-            if (response.IsSuccessStatusCode)
-            {
-                Console.WriteLine($">>> Successfully submitted {message.MessageId} of type {message.GetType().Name}");
-                return true;
-            }
-            else if (response.StatusCode == HttpStatusCode.Unauthorized)
-            {
-                // unauthorized, refresh token
-                Console.WriteLine($">>> Unauthorized error submitting {message.MessageId}, status: {response.StatusCode}");
-                return false;
-            }
-            else
-            {
-                Console.WriteLine($">>> Error submitting {message.MessageId}, status: {response.StatusCode}");
-                return false;
-            }
-        }
     }
 }
