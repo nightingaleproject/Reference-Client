@@ -17,7 +17,8 @@
     <PackageReference Include="VRDR.Messaging" Version="3.2.1"/>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.1" />
     <PackageReference Include="RestSharp" Version="106.12.0" />
-    <ProjectReference Include="..\nvssclient.lib\nvssclient.lib.csproj" />
+    <ProjectReference Include="..\..\vrdr-dotnet\VRDR.Client\VRDRClient.csproj" />
+    <!-- <ProjectReference Include="VRDR.Client" Version="3.2.1" /> -->
   </ItemGroup>
 
 </Project>
