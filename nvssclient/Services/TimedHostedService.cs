@@ -15,6 +15,7 @@ using Hl7.Fhir.Model;
 using Hl7.Fhir.ElementModel;
 
 using System.Text;
+using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Linq;
@@ -125,10 +126,11 @@ namespace NVSSClient.Services
                 var items = context.MessageItems.Where(s => s.Status == Models.MessageStatus.Pending.ToString()).ToList();
                 foreach (MessageItem item in items)
                 {
-                    BaseMessage msg = BaseMessage.Parse(item.Message.ToString(), true);
-                    Boolean success = client.PostMessageAsync(msg);
-                    if (success)
+                    BaseMessage message = BaseMessage.Parse(item.Message.ToString(), true);
+                    HttpResponseMessage response = client.PostMessageAsync(message);
+                    if (response.IsSuccessStatusCode)
                     {
+                        _logger.LogInformation($">>> Successfully submitted {message.MessageId} of type {message.GetType().Name}");
                         item.Status = Models.MessageStatus.Sent.ToString();          
                         DateTime currentTime = DateTime.UtcNow;
                         int resend = Int32.Parse(Configuration["ResendInterval"]);
@@ -137,6 +139,14 @@ namespace NVSSClient.Services
                         item.ExpirationDate = expireTime;
                         context.Update(item);
                         context.SaveChanges();
+                    }
+                    else if (response.StatusCode == HttpStatusCode.Unauthorized)
+                    {
+                        _logger.LogError($">>> Unauthorized error submitting {message.MessageId}, status: {response.StatusCode}");
+                    }
+                    else
+                    {
+                        _logger.LogError($">>> Error submitting {message.MessageId}, status: {response.StatusCode}");
                     }
                 }
             } //scope (and context) gets destroyed here
@@ -157,10 +167,11 @@ namespace NVSSClient.Services
                 var items = context.MessageItems.Where(s => s.Status != Models.MessageStatus.Acknowledged.ToString() && s.Status != Models.MessageStatus.AcknowledgedAndCoded.ToString() && s.Status != Models.MessageStatus.Error.ToString() && s.ExpirationDate < currentTime).ToList();
                 foreach (MessageItem item in items)
                 {
-                    BaseMessage msg = BaseMessage.Parse(item.Message.ToString(), true);
-                    Boolean success = client.PostMessageAsync(msg);
-                    if (success)
+                    BaseMessage message = BaseMessage.Parse(item.Message.ToString(), true);
+                    HttpResponseMessage response = client.PostMessageAsync(message);
+                    if (response.IsSuccessStatusCode)
                     {
+                        _logger.LogInformation($">>> Successfully submitted {message.MessageId} of type {message.GetType().Name}");
                         item.Status = Models.MessageStatus.Sent.ToString();
                         item.Retries = item.Retries + 1;
                         DateTime sentTime = DateTime.UtcNow;
@@ -173,6 +184,14 @@ namespace NVSSClient.Services
                         context.Update(item);
                         context.SaveChanges();
                     }
+                    else if (response.StatusCode == HttpStatusCode.Unauthorized)
+                    {
+                        _logger.LogError($">>> Unauthorized error submitting {message.MessageId}, status: {response.StatusCode}");
+                    }
+                    else
+                    {
+                        _logger.LogError($">>> Error submitting {message.MessageId}, status: {response.StatusCode}");
+                    }
                 }
             } //scope (and context) gets destroyed here
         }
@@ -183,13 +202,23 @@ namespace NVSSClient.Services
         {
             // Get the datetime now so we don't risk missing any messages, we might get duplicates but we can filter them out
             DateTime nextUpdated = DateTime.UtcNow;
-            var content = client.GetMessageResponsesAsync(lastUpdated);
-            if (!String.IsNullOrEmpty(content))
+            HttpResponseMessage response = client.GetMessageResponsesAsync(lastUpdated);
+            if (response.IsSuccessStatusCode)
             {
-                parseBundle(content);
+                var content = response.Content.ReadAsStringAsync().Result;
+                // if there are new message responses, parse them
+                if (!String.IsNullOrEmpty(content))
+                {
+                    parseBundle(content);
+                }
+                SaveTimestamp(nextUpdated);
+                lastUpdated = nextUpdated.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
             }
-            SaveTimestamp(nextUpdated);
-            lastUpdated = nextUpdated.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
+            else
+            {
+                _logger.LogError("Failed to retrieve messages from the server:", response.StatusCode);
+            }
+
         }
 
         // SaveTimestamp saves the last updated timestamp to the persistent database so we don't get repeat messages on a restart
@@ -362,8 +391,8 @@ namespace NVSSClient.Services
                         
                         // create ACK message for the response
                         AckMessage ackDuplicate = new AckMessage(message);
-                        Boolean success = client.PostMessageAsync(BaseMessage.Parse(ackDuplicate.ToJson().ToString(), true));
-                        if (!success)
+                        HttpResponseMessage rsp = client.PostMessageAsync(BaseMessage.Parse(ackDuplicate.ToJson().ToString(), true));
+                        if (!rsp.IsSuccessStatusCode)
                         {
                             Console.WriteLine($"*** Failed to send ack for message {message.MessageId}");
                         }
@@ -415,8 +444,8 @@ namespace NVSSClient.Services
 
                     // create ACK message for the extraction error
                     AckMessage ack = new AckMessage(message);
-                    Boolean sent = client.PostMessageAsync(ack);
-                    if (!sent)
+                    HttpResponseMessage resp = client.PostMessageAsync(ack);
+                    if (!resp.IsSuccessStatusCode)
                     {
                         Console.WriteLine($"*** Failed to send ack for message {message.MessageId}");
                     }
