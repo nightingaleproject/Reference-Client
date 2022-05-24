@@ -7,11 +7,8 @@ namespace NVSSClient.Models
 {
     public class PersistentState : BaseEntity
     {
-        [Key]
-        public String Name {get; set;}
-        public String Value { get; set; }
+        public long Id { get; set; }
+        public DateTime LastUpdated { get; set; }
 
     }
-
-
 }
