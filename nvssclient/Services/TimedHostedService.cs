@@ -256,19 +256,29 @@ namespace NVSSClient.Services
                     switch (msg.MessageType)
                     {
                     case "http://nchs.cdc.gov/vrdr_acknowledgement":
-                        AckMessage message = BaseMessage.Parse<AckMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                        AcknowledgementMessage message = BaseMessage.Parse<AcknowledgementMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                         Console.WriteLine($"*** Received ack message: {message.MessageId} for {message.AckedMessageId}");
                         ProcessAckMessage(message);
                         break;
-                    case "http://nchs.cdc.gov/vrdr_coding":
-                        CodingResponseMessage codeMsg = BaseMessage.Parse<CodingResponseMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                        Console.WriteLine($"*** Received coding message: {codeMsg.MessageId}");
-                        ProcessResponseMessage(codeMsg);
+                    case "http://nchs.cdc.gov/vrdr_causeofdeath_coding":
+                        CauseOfDeathCodingMessage codCodeMsg = BaseMessage.Parse<CauseOfDeathCodingMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                        Console.WriteLine($"*** Received coding message: {codCodeMsg.MessageId}");
+                        ProcessResponseMessage(codCodeMsg);
                         break;
-                    case "http://nchs.cdc.gov/vrdr_coding_update":
-                        CodingUpdateMessage updateMsg = BaseMessage.Parse<CodingUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                        Console.WriteLine($"*** Received coding update message: {updateMsg.MessageId}");
-                        ProcessResponseMessage(updateMsg);
+                    case "http://nchs.cdc.gov/vrdr_demographics_coding":
+                        DemographicsCodingMessage demCodeMsg = BaseMessage.Parse<DemographicsCodingMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                        Console.WriteLine($"*** Received coding message: {demCodeMsg.MessageId}");
+                        ProcessResponseMessage(demCodeMsg);
+                        break;
+                    case "http://nchs.cdc.gov/vrdr_causeofdeath_coding_update":
+                        CauseOfDeathCodingUpdateMessage codUpdateMsg = BaseMessage.Parse<CauseOfDeathCodingUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                        Console.WriteLine($"*** Received coding update message: {codUpdateMsg.MessageId}");
+                        ProcessResponseMessage(codUpdateMsg);
+                        break;
+                    case "http://nchs.cdc.gov/vrdr_demographics_coding_update":
+                        DemographicsCodingUpdateMessage demUpdateMsg = BaseMessage.Parse<DemographicsCodingUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                        Console.WriteLine($"*** Received coding update message: {demUpdateMsg.MessageId}");
+                        ProcessResponseMessage(demUpdateMsg);
                         break;
                     case "http://nchs.cdc.gov/vrdr_extraction_error":
                         ExtractionErrorMessage errMsg = BaseMessage.Parse<ExtractionErrorMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
@@ -307,11 +317,11 @@ namespace NVSSClient.Services
                             item.Message = extError.ToJson().ToString();
                             
                             // Business Identifiers
-                            item.StateAuxiliaryIdentifier = extError.StateAuxiliaryIdentifier;
-                            item.CertificateNumber = extError.CertificateNumber;
-                            item.DeathJurisdictionID = extError.DeathJurisdictionID;
+                            item.StateAuxiliaryIdentifier = extError.StateAuxiliaryId;
+                            item.CertificateNumber = extError.CertNo;
+                            item.DeathJurisdictionID = extError.JurisdictionId;
                             item.DeathYear = extError.DeathYear;
-                            Console.WriteLine("Business IDs {0}, {1}, {2}", extError.DeathYear, extError.CertificateNumber, extError.DeathJurisdictionID);
+                            Console.WriteLine("Business IDs {0}, {1}, {2}", extError.DeathYear, extError.CertNo, extError.JurisdictionId);
                             
                             // Status info
                             item.Status = Models.MessageStatus.Pending.ToString();
@@ -338,7 +348,7 @@ namespace NVSSClient.Services
         // TODO move to library?
         // ProcessAckMessage parses an AckMessage from the server
         // and updates the status of the Message it acknowledged. 
-        public void ProcessAckMessage(AckMessage message)
+        public void ProcessAckMessage(AcknowledgementMessage message)
         {
             try 
             {
@@ -390,7 +400,7 @@ namespace NVSSClient.Services
                         Console.WriteLine($"*** Received duplicate message with Id: {message.MessageId}, ignore and resend ack");
                         
                         // create ACK message for the response
-                        AckMessage ackDuplicate = new AckMessage(message);
+                        AcknowledgementMessage ackDuplicate = new AcknowledgementMessage(message);
                         HttpResponseMessage rsp = client.PostMessageAsync(BaseMessage.Parse(ackDuplicate.ToJson().ToString(), true));
                         if (!rsp.IsSuccessStatusCode)
                         {
@@ -400,11 +410,11 @@ namespace NVSSClient.Services
                     }
 
                     // find the latest Message with the same business identifiers as the coding response
-                    var original = context.MessageItems.Where(s => s.DeathJurisdictionID == message.DeathJurisdictionID && s.CertificateNumber == message.CertificateNumber && s.DeathYear == message.DeathYear).FirstOrDefault();
+                    var original = context.MessageItems.Where(s => s.DeathJurisdictionID == message.JurisdictionId && s.CertificateNumber == message.CertNo && s.DeathYear == message.DeathYear).FirstOrDefault();
                     if (original == null)
                     {
                         // TODO determine if an error message should be sent in this case
-                        Console.WriteLine($"*** Warning: Response received for unknown message {message.MessageId} ({message.DeathYear} {message.DeathJurisdictionID} {message.CertificateNumber})");
+                        Console.WriteLine($"*** Warning: Response received for unknown message {message.MessageId} ({message.DeathYear} {message.JurisdictionId} {message.CertNo})");
                         return;
                     }
                     // Update the status
@@ -412,15 +422,15 @@ namespace NVSSClient.Services
                     {
                         case "http://nchs.cdc.gov/vrdr_coding":
                             original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
-                            Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2}", message.DeathYear, message.DeathJurisdictionID, message.CertificateNumber);
+                            Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2}", message.DeathYear, message.JurisdictionId, message.CertNo);
                             break;
                         case "http://nchs.cdc.gov/vrdr_coding_update":
                             original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
-                            Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2}", message.DeathYear, message.DeathJurisdictionID, message.CertificateNumber);
+                            Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2}", message.DeathYear, message.JurisdictionId, message.CertNo);
                             break;
                         case "http://nchs.cdc.gov/vrdr_extraction_error":
                             original.Status = Models.MessageStatus.Error.ToString();
-                            Console.WriteLine("*** Updating status to Error for {0} {1} {2}", message.DeathYear, message.DeathJurisdictionID, message.CertificateNumber);
+                            Console.WriteLine("*** Updating status to Error for {0} {1} {2}", message.DeathYear, message.JurisdictionId, message.CertNo);
                             break;
                         default:
                             // TODO should create an error
@@ -432,9 +442,9 @@ namespace NVSSClient.Services
                     // insert response message in db
                     ResponseItem response = new ResponseItem();
                     response.Uid = message.MessageId;
-                    response.StateAuxiliaryIdentifier = message.StateAuxiliaryIdentifier;
-                    response.CertificateNumber = message.CertificateNumber;
-                    response.DeathJurisdictionID = message.DeathJurisdictionID;
+                    response.StateAuxiliaryIdentifier = message.StateAuxiliaryId;
+                    response.CertificateNumber = message.CertNo;
+                    response.DeathJurisdictionID = message.JurisdictionId;
                     response.DeathYear = message.DeathYear;
                     response.Message = message.ToJson().ToString();
                     context.ResponseItems.Add(response);
@@ -443,7 +453,7 @@ namespace NVSSClient.Services
                     Console.WriteLine($"*** Successfully recorded {message.GetType().Name} message {message.MessageId}");
 
                     // create ACK message for the extraction error
-                    AckMessage ack = new AckMessage(message);
+                    AcknowledgementMessage ack = new AcknowledgementMessage(message);
                     HttpResponseMessage resp = client.PostMessageAsync(ack);
                     if (!resp.IsSuccessStatusCode)
                     {

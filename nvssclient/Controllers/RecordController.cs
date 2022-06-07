@@ -51,7 +51,7 @@ namespace NVSSClient.Controllers
                 {
                     // Create a submission message for the record
                     DeathRecord record = new DeathRecord(text.ToString(), true);
-                    var message = new DeathRecordSubmission(record);
+                    var message = new DeathRecordSubmissionMessage(record);
                     InsertMessageItem(message);
                 }
             } catch (Exception e){
@@ -72,7 +72,7 @@ namespace NVSSClient.Controllers
             try {
                 // Create a submission message for the record
                 DeathRecord record = new DeathRecord(recordJson.ToString(), true);
-                var message = new DeathRecordSubmission(record);
+                var message = new DeathRecordSubmissionMessage(record);
                 InsertMessageItem(message);
             
             } catch (Exception e){
@@ -95,7 +95,7 @@ namespace NVSSClient.Controllers
                 {
                     // Create a submission message for the record
                     DeathRecord record = new DeathRecord(text.ToString(), true);
-                    var message = new DeathRecordUpdate(record);
+                    var message = new DeathRecordUpdateMessage(record);
                     InsertMessageItem(message);
                 }
             } catch (Exception e){
@@ -116,7 +116,7 @@ namespace NVSSClient.Controllers
             try {
                 // Create a submission message for the record
                 DeathRecord record = new DeathRecord(recordJson.ToString(), true);
-                var message = new DeathRecordUpdate(record);
+                var message = new DeathRecordUpdateMessage(record);
                 InsertMessageItem(message);
                 
             } catch (Exception e){
@@ -139,7 +139,7 @@ namespace NVSSClient.Controllers
                 {
                     // Create a submission message for the record
                     DeathRecord record = new DeathRecord(text.ToString(), true);
-                    var message = new VoidMessage(record);
+                    var message = new DeathRecordVoidMessage(record);
                     InsertMessageItem(message);
                 }
             } catch (Exception e){
@@ -160,7 +160,7 @@ namespace NVSSClient.Controllers
             try {
                 // Create a submission message for the record
                 DeathRecord record = new DeathRecord(recordJson.ToString(), true);
-                var message = new VoidMessage(record);
+                var message = new DeathRecordVoidMessage(record);
                 InsertMessageItem(message);
             } catch (Exception e){
                 Console.WriteLine("Error Handling Record: {0}", e);
@@ -223,11 +223,11 @@ namespace NVSSClient.Controllers
                     item.Message = message.ToJson().ToString();
                     
                     // Business Identifiers
-                    item.StateAuxiliaryIdentifier = message.StateAuxiliaryIdentifier;
-                    item.CertificateNumber = message.CertificateNumber;
-                    item.DeathJurisdictionID = message.DeathJurisdictionID;
+                    item.StateAuxiliaryIdentifier = message.StateAuxiliaryId;
+                    item.CertificateNumber = message.CertNo;
+                    item.DeathJurisdictionID = message.JurisdictionId;
                     item.DeathYear = message.DeathYear;
-                    Console.WriteLine("Business IDs {0}, {1}, {2}", message.DeathYear, message.CertificateNumber, message.DeathJurisdictionID);
+                    Console.WriteLine("Business IDs {0}, {1}, {2}", message.DeathYear, message.CertNo, message.JurisdictionId);
                     
                     // Status info
                     item.Status = Models.MessageStatus.Pending.ToString();
