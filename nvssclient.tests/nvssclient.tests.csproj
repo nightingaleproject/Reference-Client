@@ -19,5 +19,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Update="test-files/json/DeathRecord1.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="test-files/json/DeathRecordAlias.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

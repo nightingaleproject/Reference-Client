@@ -51,12 +51,31 @@ The client implementation has endpoints to submit VRDR records, update records, 
    3. Response: A successful request returns `204 No Content`
 ### Void Records
 1. `POST /record/void` 
-   1. Parameters: The `POST /record/void` endpoint accepts a VRDR record as json
-   2. Function: Wraps the record in a FHIR Void message and queues the message to be sent to the NVSS API Server
+   1. Parameters: The `POST /record/void` endpoint accepts a VRDR record as json and a `block_count` parameter
+   2. Function: Wraps the record in a FHIR Void message, sets the block count, and queues the message to be sent to the NVSS API Server
    3. Response: A successful request returns `204 No Content`
 2. `POST /record/voids` 
-   1. Parameters: The `POST /record/voids` endpoint accepts a list of VRDR records as json
-   2. Function: Wraps each record in a FHIR Void message and queues the message to be sent to the NVSS API Server
+   1. Parameters: The `POST /record/voids` endpoint accepts a list of VRDR records and associated `block_count` as json
+   2. Function: Wraps each record in a FHIR Void message, sets the block count, and queues the message to be sent to the NVSS API Server
+   3. Response: A successful request returns `204 No Content`
+### Alias Records
+1. `POST /record/alias` 
+   1. Parameters: The `POST /record/alias` endpoint accepts a VRDR record as json as well as the following parameters
+      1. `alias_decedent_first_name`
+      2. `alias_decedent_last_name`
+      3. `alias_decedent_name_suffix`
+      4. `alias_father_surname`
+      5. `alias_social_security_number`
+   2. Function: Wraps the record in a FHIR Alias message, sets the alias values, and queues the message to be sent to the NVSS API Server
+   3. Response: A successful request returns `204 No Content`
+2. `POST /record/aliases` 
+   1. Parameters: The `POST /record/aliases` endpoint accepts a list of VRDR records and associated parameters below as json
+      1. `alias_decedent_first_name`
+      2. `alias_decedent_last_name`
+      3. `alias_decedent_name_suffix`
+      4. `alias_father_surname`
+      5. `alias_social_security_number`
+   2. Function: Wraps each record in a FHIR Alias message, sets the alias parameters, and queues the message to be sent to the NVSS API Server
    3. Response: A successful request returns `204 No Content`
 ## Checking Responses
 1. `GET /record/status/{deathYear}/{jurisdictionId}/{certNo}`
