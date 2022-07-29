@@ -15,6 +15,11 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
+/**
+    INSTRUCTIONS: Record Controller Tests are called explicity as part of the git runner.
+    Any new or updated tests should be updated in .github/workflows/run-tests.yml
+**/
+
 namespace NVSSClient.tests {
     public class RecordControllerShould : IClassFixture<CustomWebApplicationFactory<NVSSClient.Startup>>
     {
