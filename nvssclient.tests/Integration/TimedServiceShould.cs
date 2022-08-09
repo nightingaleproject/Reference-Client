@@ -60,9 +60,9 @@ namespace NVSSClient.tests {
 
                 // Create "Acknowledged" test record to for the response
                 DeathRecord record = new DeathRecord(File.ReadAllText(FixturePath("test-files/json/DeathRecord1.json")));
-                var message = new DeathRecordSubmission(record);
-                message.DeathJurisdictionID = "FL";
-                message.CertificateNumber = 5;
+                var message = new DeathRecordSubmissionMessage(record);
+                message.JurisdictionId = "FL";
+                message.CertNo = 5;
                 message.DeathYear = 2021;
                 message.MessageSource = "https://example.com/jurisdiction/message/endpoint";
 
@@ -71,9 +71,9 @@ namespace NVSSClient.tests {
                 item.Message = message.ToJson().ToString();
                 
                 // Business Identifiers
-                item.StateAuxiliaryIdentifier = message.StateAuxiliaryIdentifier;
-                item.CertificateNumber = message.CertificateNumber;
-                item.DeathJurisdictionID = message.DeathJurisdictionID;
+                item.StateAuxiliaryIdentifier = message.StateAuxiliaryId;
+                item.CertificateNumber = message.CertNo;
+                item.DeathJurisdictionID = message.JurisdictionId;
                 item.DeathYear = message.DeathYear;
                 
                 // Status info
@@ -148,7 +148,7 @@ namespace NVSSClient.tests {
             }
 
             var timedService = _serviceProvider.GetService<IHostedService>() as TimedHostedService;
-            Bundle bundle = GetBundleOfBundleResponses("test-files/json/CauseOfDeathCodingMessage.json", "http://nchs.cdc.gov/vrdr_coding");
+            Bundle bundle = GetBundleOfBundleResponses("test-files/json/CauseOfDeathCodingMessage.json", "http://nchs.cdc.gov/vrdr_causeofdeath_coding");
             //Todo use an await
             timedService.parseBundle(bundle.ToJson());
 
@@ -160,7 +160,7 @@ namespace NVSSClient.tests {
                 Assert.Equal(1, newRespItems - respItems);
 
                 // Clean up, remove the coding response
-                ResponseItem response = context.ResponseItems.Where(m => m.Uid == "a3a1ff4e-fc50-47eb-b3af-442e5fceadd1").FirstOrDefault();
+                ResponseItem response = context.ResponseItems.Where(m => m.Uid == "0b8543b7-aa8f-41b7-8f59-b4e1530ff68a").FirstOrDefault();
                 context.Remove(response);
 
                 context.SaveChanges();
@@ -181,7 +181,7 @@ namespace NVSSClient.tests {
             }
 
             var timedService = _serviceProvider.GetService<IHostedService>() as TimedHostedService;
-            Bundle bundle = GetBundleOfBundleResponses("test-files/json/CodingUpdateMessage.json", "http://nchs.cdc.gov/vrdr_coding_update");
+            Bundle bundle = GetBundleOfBundleResponses("test-files/json/CodingUpdateMessage.json", "http://nchs.cdc.gov/vrdr_causeofdeath_coding_update");
             //Todo use an await
             timedService.parseBundle(bundle.ToJson());
 
@@ -193,7 +193,72 @@ namespace NVSSClient.tests {
                 Assert.Equal(1, newRespItems - respItems);
 
                 // Clean up, remove the coding update response
-                ResponseItem response = context.ResponseItems.Where(m => m.Uid == "a3a1ff4e-fc50-47eb-b3af-442e5fceadd1").FirstOrDefault();
+                ResponseItem response = context.ResponseItems.Where(m => m.Uid == "43e25b3b-6501-4eeb-81de-a3efddf19692").FirstOrDefault();
+                context.Remove(response);
+
+                context.SaveChanges();
+            }
+        }
+
+        [Fact]
+        public void ParseContent_ShouldParseDemographicsResponse()
+        {
+
+            int respItems; 
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                context.Database.EnsureCreated();
+                respItems = context.ResponseItems.Count();
+            }
+
+            var timedService = _serviceProvider.GetService<IHostedService>() as TimedHostedService;
+            Bundle bundle = GetBundleOfBundleResponses("test-files/json/DemographicsCodingMessage.json", "http://nchs.cdc.gov/vrdr_demographics_coding");
+            //Todo use an await
+            timedService.parseBundle(bundle.ToJson());
+
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                context.Database.EnsureCreated();
+                var newRespItems = context.ResponseItems.Count();
+                Assert.Equal(1, newRespItems - respItems);
+
+                // Clean up, remove the coding response
+                ResponseItem response = context.ResponseItems.Where(m => m.Uid == "21002ed3-c5cc-443d-b2f1-ef5022b740f4").FirstOrDefault();
+                context.Remove(response);
+
+                context.SaveChanges();
+            }
+        }
+
+        [Fact]
+        public void ParseContent_ShouldParseDemographicsUpdateResponse()
+        {
+
+            int respItems; 
+            using (var scope = _serviceProvider.CreateScope())
+            {
+
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                context.Database.EnsureCreated();
+                respItems = context.ResponseItems.Count();
+            }
+
+            var timedService = _serviceProvider.GetService<IHostedService>() as TimedHostedService;
+            Bundle bundle = GetBundleOfBundleResponses("test-files/json/DemographicsCodingUpdateMessage.json", "http://nchs.cdc.gov/vrdr_demographics_coding_update");
+            //Todo use an await
+            timedService.parseBundle(bundle.ToJson());
+
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                context.Database.EnsureCreated();
+                var newRespItems = context.ResponseItems.Count();
+                Assert.Equal(1, newRespItems - respItems);
+
+                // Clean up, remove the coding update response
+                ResponseItem response = context.ResponseItems.Where(m => m.Uid == "f569dea9-a824-4751-b7c8-34dde4b94e9a").FirstOrDefault();
                 context.Remove(response);
 
                 context.SaveChanges();
@@ -239,24 +304,38 @@ namespace NVSSClient.tests {
             List<BaseMessage> testMessages = new List<BaseMessage>();
             switch (msgType)
             {
-                case "http://nchs.cdc.gov/vrdr_coding":
-                    CodingResponseMessage codedMsg = BaseMessage.Parse<CodingResponseMessage>(FixtureStream(filePath));
-                    codedMsg.DeathJurisdictionID = "FL";
-                    codedMsg.CertificateNumber = 5;
+                case "http://nchs.cdc.gov/vrdr_causeofdeath_coding":
+                    CauseOfDeathCodingMessage codedMsg = BaseMessage.Parse<CauseOfDeathCodingMessage>(FixtureStream(filePath));
+                    codedMsg.JurisdictionId = "FL";
+                    codedMsg.CertNo = 5;
                     codedMsg.DeathYear = 2021;
                     testMessages.Add(codedMsg);
                     break;
-                case "http://nchs.cdc.gov/vrdr_coding_update":
-                    CodingUpdateMessage updateMsg = BaseMessage.Parse<CodingUpdateMessage>(FixtureStream(filePath));
-                    updateMsg.DeathJurisdictionID = "FL";
-                    updateMsg.CertificateNumber = 5;
+                case "http://nchs.cdc.gov/vrdr_causeofdeath_coding_update":
+                    CauseOfDeathCodingUpdateMessage updateMsg = BaseMessage.Parse<CauseOfDeathCodingUpdateMessage>(FixtureStream(filePath));
+                    updateMsg.JurisdictionId = "FL";
+                    updateMsg.CertNo = 5;
                     updateMsg.DeathYear = 2021;
                     testMessages.Add(updateMsg);
                     break;
+                case "http://nchs.cdc.gov/vrdr_demographics_coding":
+                    DemographicsCodingMessage demMsg = BaseMessage.Parse<DemographicsCodingMessage>(FixtureStream(filePath));
+                    demMsg.JurisdictionId = "FL";
+                    demMsg.CertNo = 5;
+                    demMsg.DeathYear = 2021;
+                    testMessages.Add(demMsg);
+                    break;
+                case "http://nchs.cdc.gov/vrdr_demographics_coding_update":
+                    DemographicsCodingUpdateMessage demUpdateMsg = BaseMessage.Parse<DemographicsCodingUpdateMessage>(FixtureStream(filePath));
+                    demUpdateMsg.JurisdictionId = "FL";
+                    demUpdateMsg.CertNo = 5;
+                    demUpdateMsg.DeathYear = 2021;
+                    testMessages.Add(demUpdateMsg);
+                    break;
                 case "http://nchs.cdc.gov/vrdr_extraction_error":
                     ExtractionErrorMessage errorMsg = BaseMessage.Parse<ExtractionErrorMessage>(FixtureStream(filePath));
-                    errorMsg.DeathJurisdictionID = "FL";
-                    errorMsg.CertificateNumber = 5;
+                    errorMsg.JurisdictionId = "FL";
+                    errorMsg.CertNo = 5;
                     errorMsg.DeathYear = 2021;
                     testMessages.Add(errorMsg);
                     break;

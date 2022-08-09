@@ -267,7 +267,7 @@ namespace NVSSClient.Services
                         break;
                     case "http://nchs.cdc.gov/vrdr_demographics_coding":
                         DemographicsCodingMessage demCodeMsg = BaseMessage.Parse<DemographicsCodingMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                        Console.WriteLine($"*** Received coding message: {demCodeMsg.MessageId}");
+                        Console.WriteLine($"*** Received demographics coding message: {demCodeMsg.MessageId}");
                         ProcessResponseMessage(demCodeMsg);
                         break;
                     case "http://nchs.cdc.gov/vrdr_causeofdeath_coding_update":
@@ -277,7 +277,7 @@ namespace NVSSClient.Services
                         break;
                     case "http://nchs.cdc.gov/vrdr_demographics_coding_update":
                         DemographicsCodingUpdateMessage demUpdateMsg = BaseMessage.Parse<DemographicsCodingUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                        Console.WriteLine($"*** Received coding update message: {demUpdateMsg.MessageId}");
+                        Console.WriteLine($"*** Received demographics coding update message: {demUpdateMsg.MessageId}");
                         ProcessResponseMessage(demUpdateMsg);
                         break;
                     case "http://nchs.cdc.gov/vrdr_extraction_error":
@@ -420,11 +420,19 @@ namespace NVSSClient.Services
                     // Update the status
                     switch (message.MessageType)
                     {
-                        case "http://nchs.cdc.gov/vrdr_coding":
+                        case "http://nchs.cdc.gov/vrdr_causeofdeath_coding":
                             original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
                             Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2}", message.DeathYear, message.JurisdictionId, message.CertNo);
                             break;
-                        case "http://nchs.cdc.gov/vrdr_coding_update":
+                        case "http://nchs.cdc.gov/vrdr_causeofdeath_coding_update":
+                            original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
+                            Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2}", message.DeathYear, message.JurisdictionId, message.CertNo);
+                            break;
+                        case "http://nchs.cdc.gov/vrdr_demographics_coding":
+                            original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
+                            Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2}", message.DeathYear, message.JurisdictionId, message.CertNo);
+                            break;
+                        case "http://nchs.cdc.gov/vrdr_demographics_coding_update":
                             original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
                             Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2}", message.DeathYear, message.JurisdictionId, message.CertNo);
                             break;
