@@ -44,7 +44,7 @@ namespace NVSSClient.Controllers
         // Wraps each record in a FHIR Submission message and queues the message to be sent to the NVSS API Server
         [HttpPost]
         [Route("submissions")]
-        public async Task<ActionResult> SubmissionRecordHandler([FromBody] List<object> textList)
+        public IActionResult SubmissionRecordHandler([FromBody] List<object> textList)
         {               
             try {
                 foreach (object text in textList)
@@ -67,7 +67,7 @@ namespace NVSSClient.Controllers
         // Wraps the record in a FHIR Submission message and queues the message to be sent to the NVSS API Server
         [HttpPost]
         [Route("submission")]
-        public async Task<ActionResult> SubmissionRecordHandler([FromBody] object recordJson)
+        public IActionResult SubmissionRecordHandler([FromBody] object recordJson)
         {               
             try {
                 // Create a submission message for the record
@@ -88,7 +88,7 @@ namespace NVSSClient.Controllers
         // Wraps each record in a FHIR Update message and queues the message to be sent to the NVSS API Server
         [HttpPost]
         [Route("updates")]
-        public async Task<ActionResult> UpdateRecordHandler([FromBody] List<object> textList)
+        public IActionResult UpdateRecordHandler([FromBody] List<object> textList)
         {             
             try {
                 foreach (object text in textList)
@@ -111,7 +111,7 @@ namespace NVSSClient.Controllers
         //Wraps the record in a FHIR Update message and queues the message to be sent to the NVSS API Server
         [HttpPost]
         [Route("update")]
-        public async Task<ActionResult> UpdateRecordHandler([FromBody] object recordJson)
+        public IActionResult UpdateRecordHandler([FromBody] object recordJson)
         {             
             try {
                 // Create a submission message for the record
@@ -132,7 +132,7 @@ namespace NVSSClient.Controllers
         // Wraps each record in a FHIR Void message and queues the message to be sent to the NVSS API Server
         [HttpPost]
         [Route("voids")]
-        public async Task<ActionResult> VoidRecordHandler([FromBody] List<object> textList)
+        public IActionResult VoidRecordHandler([FromBody] List<object> textList)
         {               
             try {
                 foreach (object text in textList)
@@ -160,7 +160,7 @@ namespace NVSSClient.Controllers
         // Wraps the record in a FHIR Void message and queues the message to be sent to the NVSS API Server
         [HttpPost]
         [Route("void")]
-        public async Task<ActionResult> VoidRecordHandler([FromBody] Dictionary<string,object> json)
+        public IActionResult VoidRecordHandler([FromBody] Dictionary<string,object> json)
         {               
             try {
                 // Create a submission message for the record
@@ -183,7 +183,7 @@ namespace NVSSClient.Controllers
         // Wraps each record in a FHIR Alias message and queues the message to be sent to the NVSS API Server
         [HttpPost]
         [Route("aliases")]
-        public async Task<ActionResult> AliasRecordHandler([FromBody] List<object> textList)
+        public IActionResult AliasRecordHandler([FromBody] List<object> textList)
         {               
             try {
                 foreach (object text in textList)
@@ -221,7 +221,7 @@ namespace NVSSClient.Controllers
         // Wraps the record in a FHIR Alias message, sets the alias values and queues the message to be sent to the NVSS API Server
         [HttpPost]
         [Route("alias")]
-        public async Task<ActionResult> AliasRecordHandler([FromBody] Dictionary<string, object> data)
+        public IActionResult AliasRecordHandler([FromBody] Dictionary<string, object> data)
         {               
             try {
                 // Create a submission message for the record
@@ -257,7 +257,7 @@ namespace NVSSClient.Controllers
         // jurisditionId: the jurisdiction Id in the VRDR record
         // certNo: the 5 digit certificate number in the VRDR record
         [HttpGet("status/{deathYear}/{jurisdictionId}/{certNo}")]
-        public async Task<ActionResult<RecordResponse>> GetRecordStatus(uint deathYear, string jurisdictionId, string certNo)
+        public ActionResult<RecordResponse> GetRecordStatus(uint deathYear, string jurisdictionId, string certNo)
         {
             try 
             {            
