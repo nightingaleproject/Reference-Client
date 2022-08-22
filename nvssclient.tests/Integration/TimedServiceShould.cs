@@ -103,7 +103,7 @@ namespace NVSSClient.tests {
             }
         }
 
-        // [Fact]
+        [Fact]
         public void ParseContent_ShouldParseExtractionErrorResponse()
         {
 
@@ -135,7 +135,7 @@ namespace NVSSClient.tests {
             }
         }
 
-        // [Fact]
+        [Fact]
         public void ParseContent_ShouldParseCodedResponse()
         {
 
@@ -167,7 +167,7 @@ namespace NVSSClient.tests {
             }
         }
 
-        // [Fact]
+        [Fact]
         public void ParseContent_ShouldParseCodingUpdateResponse()
         {
 
@@ -200,7 +200,7 @@ namespace NVSSClient.tests {
             }
         }
 
-        // [Fact]
+        [Fact]
         public void ParseContent_ShouldParseDemographicsResponse()
         {
 
@@ -232,7 +232,7 @@ namespace NVSSClient.tests {
             }
         }
 
-        // [Fact]
+        [Fact]
         public void ParseContent_ShouldParseDemographicsUpdateResponse()
         {
 
@@ -265,7 +265,7 @@ namespace NVSSClient.tests {
             }
         }
 
-        // [Fact]
+        [Fact]
         public void ParseContent_ShouldGenerateExtractionError()
         {
 

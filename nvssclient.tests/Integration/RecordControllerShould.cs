@@ -35,7 +35,7 @@ namespace NVSSClient.tests {
         }
         
 
-        [Fact]
+        // [Fact]
         public async Task PostRecords_ShouldSaveMessage()
         {
             var records = GetTestRecords("test-files/json/DeathRecord1.json");
@@ -49,7 +49,7 @@ namespace NVSSClient.tests {
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         }
 
-        [Fact]
+        // [Fact]
         public async Task PostRecord_ShouldSaveMessage()
         {
             var records = GetTestRecords("test-files/json/DeathRecord1.json");
@@ -63,7 +63,7 @@ namespace NVSSClient.tests {
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         }
 
-        [Fact]
+        // [Fact]
         public async Task PostAliasRecords_ShouldSaveMessage()
         {
             List<Dictionary<string, object>> dataList = new List<Dictionary<string, object>>();
@@ -91,7 +91,7 @@ namespace NVSSClient.tests {
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         }
 
-        [Fact]
+        // [Fact]
         public async Task PostAliasRecord_ShouldSaveMessage()
         {
             var records = GetTestRecords("test-files/json/DeathRecord1.json");
@@ -115,7 +115,7 @@ namespace NVSSClient.tests {
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         }
 
-        [Fact]
+        // [Fact]
         public async Task PostVoidRecords_ShouldSaveMessage()
         {
             List<Dictionary<string, object>> dataList = new List<Dictionary<string, object>>();
@@ -138,7 +138,7 @@ namespace NVSSClient.tests {
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         }
 
-        [Fact]
+        // [Fact]
         public async Task PostVoidRecord_ShouldSaveMessage()
         {
             var records = GetTestRecords("test-files/json/DeathRecord1.json");
