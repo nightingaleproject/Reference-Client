@@ -42,16 +42,6 @@ namespace NVSSClient.Services
             _logger = logger;
             _scopeFactory = scopeFactory;
             Configuration = configuration;
-            
-            // Check the persistent data for the last updated timestamp 
-            using (var scope = _scopeFactory.CreateScope()){
-                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                PersistentState dbState = context.PersistentState.OrderBy(p => p.CreatedDate).FirstOrDefault();
-                if (dbState != null){
-                    lastUpdated = dbState.LastUpdated.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
-                }
-                Console.WriteLine("*** LastUpdated: {0}", lastUpdated);
-            }
 
             // Parse the credentials config
             String authUrl = Startup.StaticConfig.GetConnectionString("AuthServer");
@@ -200,9 +190,8 @@ namespace NVSSClient.Services
         // the became available since the lastUpdated time stamp
         private void PollForResponses()
         {
-            // Get the datetime now so we don't risk missing any messages, we might get duplicates but we can filter them out
-            DateTime nextUpdated = DateTime.UtcNow;
-            HttpResponseMessage response = client.GetMessageResponsesAsync(lastUpdated);
+            // GetMessageResponsesAsync will retrieve any new message responses from the server
+            HttpResponseMessage response = client.GetMessageResponsesAsync();
             if (response.IsSuccessStatusCode)
             {
                 var content = response.Content.ReadAsStringAsync().Result;
@@ -211,35 +200,12 @@ namespace NVSSClient.Services
                 {
                     parseBundle(content);
                 }
-                SaveTimestamp(nextUpdated);
-                lastUpdated = nextUpdated.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
             }
             else
             {
                 _logger.LogError("Failed to retrieve messages from the server:", response.StatusCode);
             }
 
-        }
-
-        // SaveTimestamp saves the last updated timestamp to the persistent database so we don't get repeat messages on a restart
-        private void SaveTimestamp(DateTime now)
-        {
-            using (var scope = _scopeFactory.CreateScope()){
-                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                PersistentState dbState = context.PersistentState.FirstOrDefault();
-                if (dbState == null)
-                {
-                    dbState = new PersistentState();
-                    dbState.LastUpdated = now;
-                    context.PersistentState.Add(dbState);
-                    context.SaveChanges();
-                    return;
-                }
-                // update the time
-                dbState.LastUpdated = now;
-                context.Update(dbState);
-                context.SaveChanges();
-            }
         }
 
         // TODO move to library?
