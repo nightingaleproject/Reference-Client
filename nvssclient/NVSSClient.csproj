@@ -16,8 +16,8 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3"/>
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.1" />
     <PackageReference Include="RestSharp" Version="106.12.0" />
-    <!-- <ProjectReference Include="..\..\vrdr-dotnet\VRDR.Client\VRDRClient.csproj" /> -->
-    <PackageReference Include="VRDR.Client" Version="4.0.0-preview8" />
+    <ProjectReference Include="..\..\vrdr-dotnet\VRDR.Client\VRDRClient.csproj" />
+    <!-- <PackageReference Include="VRDR.Client" Version="4.0.0-preview8" /> -->
   </ItemGroup>
 
 </Project>

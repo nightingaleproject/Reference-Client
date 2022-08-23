@@ -84,7 +84,7 @@ namespace NVSSClient.Services
             // Step 1, submit new records in the db
             SubmitNewMessages();
             // Step 2, poll for response messages from the server
-            PollForResponses();
+            PollForResponsesAsync();
             // Step 3, check for messages that haven't received an ack in X amount of time
             ResendMessages();
         }
@@ -105,7 +105,7 @@ namespace NVSSClient.Services
         }
 
         // SubmitNewMessages retrieves new Messages from the database and sends them to the NVSS FHIR API
-        public void SubmitNewMessages()
+        public async System.Threading.Tasks.Task SubmitNewMessages()
         {
             // scope the db context, its not meant to last the whole life cycle
             // and we need to deconflict for other db calls
@@ -117,7 +117,7 @@ namespace NVSSClient.Services
                 foreach (MessageItem item in items)
                 {
                     BaseMessage message = BaseMessage.Parse(item.Message.ToString(), true);
-                    HttpResponseMessage response = client.PostMessageAsync(message);
+                    HttpResponseMessage response = await client.PostMessageAsync(message);
                     if (response.IsSuccessStatusCode)
                     {
                         _logger.LogInformation($">>> Successfully submitted {message.MessageId} of type {message.GetType().Name}");
@@ -144,7 +144,7 @@ namespace NVSSClient.Services
 
         // ResendMessages supports reliable delivery of messages, it finds Messages in the DB that have not been acknowledged 
         // and have exceeded their expiration date. It resends the selected Messages to the NVSS FHIR API
-        public void ResendMessages()
+        public async System.Threading.Tasks.Task ResendMessages()
         {
             // scope the db context, its not meant to last the whole life cycle
             // and we need to deconflict for other db calls
@@ -158,7 +158,7 @@ namespace NVSSClient.Services
                 foreach (MessageItem item in items)
                 {
                     BaseMessage message = BaseMessage.Parse(item.Message.ToString(), true);
-                    HttpResponseMessage response = client.PostMessageAsync(message);
+                    HttpResponseMessage response = await client.PostMessageAsync(message);
                     if (response.IsSuccessStatusCode)
                     {
                         _logger.LogInformation($">>> Successfully submitted {message.MessageId} of type {message.GetType().Name}");
@@ -188,10 +188,10 @@ namespace NVSSClient.Services
 
         // PollForResponses makes a GET request to the NVSS FHIR API server for new Messages
         // the became available since the lastUpdated time stamp
-        private void PollForResponses()
+        private async System.Threading.Tasks.Task PollForResponsesAsync()
         {
             // GetMessageResponsesAsync will retrieve any new message responses from the server
-            HttpResponseMessage response = client.GetMessageResponsesAsync();
+            HttpResponseMessage response = await client.GetMessageResponsesAsync();
             if (response.IsSuccessStatusCode)
             {
                 var content = response.Content.ReadAsStringAsync().Result;
@@ -203,7 +203,7 @@ namespace NVSSClient.Services
             }
             else
             {
-                _logger.LogError("Failed to retrieve messages from the server:", response.StatusCode);
+                _logger.LogError($"Failed to retrieve messages from the server: {response.StatusCode}");
             }
 
         }
@@ -352,7 +352,7 @@ namespace NVSSClient.Services
 
         // TODO move to library?
         // ProcessResponseMessage processes codings, coding updates, and extraction errors
-        public void ProcessResponseMessage(BaseMessage message)
+        public async System.Threading.Tasks.Task ProcessResponseMessage(BaseMessage message)
         {
             try 
             {
@@ -367,7 +367,7 @@ namespace NVSSClient.Services
                         
                         // create ACK message for the response
                         AcknowledgementMessage ackDuplicate = new AcknowledgementMessage(message);
-                        HttpResponseMessage rsp = client.PostMessageAsync(BaseMessage.Parse(ackDuplicate.ToJson().ToString(), true));
+                        HttpResponseMessage rsp = await client.PostMessageAsync(BaseMessage.Parse(ackDuplicate.ToJson().ToString(), true));
                         if (!rsp.IsSuccessStatusCode)
                         {
                             Console.WriteLine($"*** Failed to send ack for message {message.MessageId}");
@@ -428,7 +428,7 @@ namespace NVSSClient.Services
 
                     // create ACK message for the extraction error
                     AcknowledgementMessage ack = new AcknowledgementMessage(message);
-                    HttpResponseMessage resp = client.PostMessageAsync(ack);
+                    HttpResponseMessage resp = await client.PostMessageAsync(ack);
                     if (!resp.IsSuccessStatusCode)
                     {
                         Console.WriteLine($"*** Failed to send ack for message {message.MessageId}");
