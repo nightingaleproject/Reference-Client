@@ -27,7 +27,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace NVSSClient.tests {
+namespace NVSSClient.tests 
+{
+     [Collection("ClientIntegrationTests")]
     public class TimedServiceShould : IClassFixture<CustomWebApplicationFactory<NVSSClient.Startup>>, IDisposable
     {
         private readonly CustomWebApplicationFactory<NVSSClient.Startup> _factory;
@@ -135,7 +137,7 @@ namespace NVSSClient.tests {
             }
         }
 
-        // [Fact]
+        [Fact]
         public void ParseContent_ShouldParseCodedResponse()
         {
 
@@ -167,7 +169,7 @@ namespace NVSSClient.tests {
             }
         }
 
-        // [Fact]
+        [Fact]
         public void ParseContent_ShouldParseCodingUpdateResponse()
         {
 
@@ -200,7 +202,7 @@ namespace NVSSClient.tests {
             }
         }
 
-        // [Fact]
+        [Fact]
         public void ParseContent_ShouldParseDemographicsResponse()
         {
 
@@ -232,7 +234,7 @@ namespace NVSSClient.tests {
             }
         }
 
-        // [Fact]
+        [Fact]
         public void ParseContent_ShouldParseDemographicsUpdateResponse()
         {
 
@@ -265,7 +267,7 @@ namespace NVSSClient.tests {
             }
         }
 
-        // [Fact]
+        [Fact]
         public void ParseContent_ShouldGenerateExtractionError()
         {
 
@@ -281,7 +283,7 @@ namespace NVSSClient.tests {
             var timedService = _serviceProvider.GetService<IHostedService>() as TimedHostedService;
             StreamReader bundleReader = FixtureStream("test-files/json/BundleOfBundlesWithError.json");
             string bundleJson = bundleReader.ReadToEnd();
-            //Todo use an await
+            // Todo use an await
             // This should result in an extraction error that's added to the MessageItems table
             timedService.parseBundle(bundleJson);
 

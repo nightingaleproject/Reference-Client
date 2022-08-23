@@ -20,7 +20,9 @@ using Xunit;
     Any new or updated tests should be updated in .github/workflows/run-tests.yml
 **/
 
-namespace NVSSClient.tests {
+namespace NVSSClient.tests 
+{
+    [Collection("ClientIntegrationTests")]
     public class RecordControllerShould : IClassFixture<CustomWebApplicationFactory<NVSSClient.Startup>>
     {
         private readonly CustomWebApplicationFactory<NVSSClient.Startup> _factory;
