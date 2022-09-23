@@ -35,7 +35,7 @@ namespace NVSSClient.Controllers
         public class RecordResponse
         {
             public MessageItem Message {get; set;}          
-            public String Response  {get; set;}
+            public List<String> Responses  {get; set;}
 
            
         }
@@ -251,36 +251,85 @@ namespace NVSSClient.Controllers
             return NoContent();
         }
 
-        // GET: Record Status
-        // Retrieves the most recent MessageItem with business identifiers that match the provided parameters
-        // deathYear: the year of death in the VRDR record
-        // jurisditionId: the jurisdiction Id in the VRDR record
-        // certNo: the 5 digit certificate number in the VRDR record
-        [HttpGet("status/{deathYear}/{jurisdictionId}/{certNo}")]
-        public ActionResult<RecordResponse> GetRecordStatus(uint deathYear, string jurisdictionId, string certNo)
+        // GET: List of Records
+        // Retrieves return all the unique business identifier sets and the status for the latest message that was sent with those business ids
+        [HttpGet]
+        public ActionResult<List<MessageItem>> GetAllRecordStatus()
         {
             try 
             {            
                 // Return the most recent message with the given business identifiers and it's status
                 using (var scope = _scopeFactory.CreateScope()){
+
+                    // get a distinct list of business identifiers submitted to the API
+                    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                    List<MessageItem> uniqueBussinessIds = context.MessageItems.OrderByDescending(s => s.CreatedDate).Select(p => new MessageItem()
+                    {
+                        DeathJurisdictionID = p.DeathJurisdictionID,
+                        CertificateNumber = p.CertificateNumber,
+                        DeathYear = p.DeathYear
+                    }).Distinct().ToList();
+                    if (uniqueBussinessIds == null) {
+                        Console.WriteLine("Error Retrieving status of death records");
+                        return NotFound("Records not found");
+                    }
+                    
+                    // for each set of business ids, find the latest submitted message and its status
+                    List<MessageItem> latestMsgs = new List<MessageItem>();
+                    foreach (MessageItem ids in uniqueBussinessIds)
+                    {
+                        var message = context.MessageItems.Where(s => s.CertificateNumber == ids.CertificateNumber && s.DeathYear == ids.DeathYear && s.DeathJurisdictionID == ids.DeathJurisdictionID).OrderByDescending(s => s.CreatedDate).FirstOrDefault();
+                        latestMsgs.Add(message);
+                    }
+
+                    return latestMsgs;
+                }
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine("Error Retrieving record statuses: {0}", e);
+                return BadRequest();
+            }
+
+        }
+
+        // GET: Record Status
+        // Retrieves all the messages sent with the specified business ids
+        // deathYear: the year of death in the VRDR record
+        // jurisditionId: the jurisdiction Id in the VRDR record
+        // certNo: the 5 digit certificate number in the VRDR record
+        [HttpGet("status/{deathYear}/{jurisdictionId}/{certNo}")]
+        public ActionResult<List<RecordResponse>> GetRecordStatus(uint deathYear, string jurisdictionId, string certNo)
+        {
+            try 
+            {            
+                // Return all messages with the given business identifiers and their responses if available
+                using (var scope = _scopeFactory.CreateScope()){
                     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                     uint certNoInt = UInt32.Parse(certNo);
-                    var message = context.MessageItems.Where(s => s.CertificateNumber == certNoInt && s.DeathYear == deathYear && s.DeathJurisdictionID == jurisdictionId).OrderByDescending(s => s.CreatedDate).FirstOrDefault();
-                    if (message == null) {
-                        Console.WriteLine("Error Retrieving status, no record was found for the provided identifiers.");
+                    List<MessageItem> messages = context.MessageItems.Where(s => s.CertificateNumber == certNoInt && s.DeathYear == deathYear && s.DeathJurisdictionID == jurisdictionId).OrderByDescending(s => s.CreatedDate).ToList();
+                    if (messages == null) {
+                        Console.WriteLine("Error, no messages were found for the provided identifiers.");
                         return NotFound("Record not found");
                     }
                     
-                    RecordResponse resp = new RecordResponse();
-                    resp.Message = message;
-                    // check if there is a response message
-                    if (message.Status == MessageStatus.Error.ToString() || message.Status == MessageStatus.AcknowledgedAndCoded.ToString())
+                    List<RecordResponse> recordResponses = new List<RecordResponse>();
+                    foreach(MessageItem msg in messages)
                     {
-                        // get the most recent response message
-                        var response = context.ResponseItems.Where(s => s.CertificateNumber == certNoInt && s.DeathYear == deathYear && s.DeathJurisdictionID == jurisdictionId).OrderByDescending(s => s.CreatedDate).FirstOrDefault();
-                        resp.Response = response.Message;
+                        RecordResponse recordResp = new RecordResponse();
+                        recordResp.Message = msg;
+                        // check if there are response messages 
+                        if (msg.Status == MessageStatus.Error.ToString() || msg.Status == MessageStatus.AcknowledgedAndCoded.ToString())
+                        {
+                            // get the response messages with these business ids
+                            List<String> respMsgs = context.ResponseItems.Where(s => s.CertificateNumber == certNoInt && s.DeathYear == deathYear && s.DeathJurisdictionID == jurisdictionId).OrderByDescending(s => s.CreatedDate).Select(p => p.Message).ToList();
+                            recordResp.Responses = respMsgs;
+                        }
+                        recordResponses.Add(recordResp);
+
                     }
-                    return resp;
+
+                    return recordResponses;
                 }
             }
             catch(Exception e)
