@@ -69,7 +69,7 @@ namespace NVSSClient.tests
                 message.MessageSource = "https://example.com/jurisdiction/message/endpoint";
 
                 MessageItem item = new MessageItem();
-                item.Uid = message.MessageId;
+                item.Uid = "DeathCertificateDocument-Example1";
                 item.Message = message.ToJson().ToString();
                 
                 // Business Identifiers
@@ -85,6 +85,7 @@ namespace NVSSClient.tests
                 // insert new message
                 context.MessageItems.Add(item);
                 context.SaveChanges();
+
             }
 
         }

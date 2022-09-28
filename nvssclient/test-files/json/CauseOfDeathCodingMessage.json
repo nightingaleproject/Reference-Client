@@ -15,6 +15,10 @@
               "endpoint": "http://nchs.cdc.gov/vrdr_submission"
             }
           ],
+          "response" : {
+            "identifier" : "DeathCertificateDocument-Example1",
+            "code" : "ok"
+          },
           "focus": [
             {
               "reference": "urn:uuid:291a2bcd-86ac-4e1c-8e61-e42a047a6cd3"

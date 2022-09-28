@@ -409,15 +409,15 @@ namespace NVSSClient.Services
                     if (String.IsNullOrEmpty(refID))
                     {
                         // TODO determine if an error message should be sent in this case
-                        Console.WriteLine($"*** Warning: Response received for unknown message {message.MessageId} ({message.DeathYear} {message.JurisdictionId} {message.CertNo})");
+                        Console.WriteLine($"*** Warning: Response received for unknown message {refID} ({message.MessageId} {message.DeathYear} {message.JurisdictionId} {message.CertNo})");
                         return;
                     }
                     // there should only be one message with the given reference id
-                    var original = context.MessageItems.Where(s => s.Uid == refID).FirstOrDefault();
+                    MessageItem original = context.MessageItems.Where(s => s.Uid == refID).FirstOrDefault();
                     if (original == null)
                     {
                         // TODO determine if an error message should be sent in this case
-                        Console.WriteLine($"*** Warning: Response received for unknown message {message.MessageId} ({message.DeathYear} {message.JurisdictionId} {message.CertNo})");
+                        Console.WriteLine($"*** Warning: Response received for unknown message {refID} ({message.MessageId} {message.DeathYear} {message.JurisdictionId} {message.CertNo})");
                         return;
                     }
                     // Update the status
@@ -425,23 +425,23 @@ namespace NVSSClient.Services
                     {
                         case "http://nchs.cdc.gov/vrdr_causeofdeath_coding":
                             original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
-                            Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2}", message.DeathYear, message.JurisdictionId, message.CertNo);
+                            Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
                             break;
                         case "http://nchs.cdc.gov/vrdr_causeofdeath_coding_update":
                             original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
-                            Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2}", message.DeathYear, message.JurisdictionId, message.CertNo);
+                            Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
                             break;
                         case "http://nchs.cdc.gov/vrdr_demographics_coding":
                             original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
-                            Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2}", message.DeathYear, message.JurisdictionId, message.CertNo);
+                            Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
                             break;
                         case "http://nchs.cdc.gov/vrdr_demographics_coding_update":
                             original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
-                            Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2}", message.DeathYear, message.JurisdictionId, message.CertNo);
+                            Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
                             break;
                         case "http://nchs.cdc.gov/vrdr_extraction_error":
                             original.Status = Models.MessageStatus.Error.ToString();
-                            Console.WriteLine("*** Updating status to Error for {0} {1} {2}", message.DeathYear, message.JurisdictionId, message.CertNo);
+                            Console.WriteLine("*** Updating status to Error for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
                             break;
                         default:
                             // TODO should create an error
