@@ -7,6 +7,7 @@ namespace NVSSClient.Models
     {
         public long Id { get; set; }
         public String Uid { get; set; }
+        public String ReferenceUid { get; set; }
         public String StateAuxiliaryIdentifier { get; set; }
         public uint? CertificateNumber { get; set; }
         public uint? DeathYear {get; set;}

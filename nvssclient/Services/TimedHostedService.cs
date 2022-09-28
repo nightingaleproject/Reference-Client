@@ -375,8 +375,16 @@ namespace NVSSClient.Services
                         return;
                     }
 
-                    // find the latest Message with the same business identifiers as the coding response
-                    var original = context.MessageItems.Where(s => s.DeathJurisdictionID == message.JurisdictionId && s.CertificateNumber == message.CertNo && s.DeathYear == message.DeathYear).FirstOrDefault();
+                    // find the original message this response message is linked to
+                    var refID = message.Header?.Response?.Identifier;
+                    if (refID.IsNullOrEmpty())
+                    {
+                        // TODO determine if an error message should be sent in this case
+                        Console.WriteLine($"*** Warning: Response received for unknown message {message.MessageId} ({message.DeathYear} {message.JurisdictionId} {message.CertNo})");
+                        return;
+                    }
+                    // there should only be one message with the given reference id
+                    var original = context.MessageItems.Where(s => s.Uid == refID).FirstOrDefault();
                     if (original == null)
                     {
                         // TODO determine if an error message should be sent in this case
@@ -416,6 +424,7 @@ namespace NVSSClient.Services
                     // insert response message in db
                     ResponseItem response = new ResponseItem();
                     response.Uid = message.MessageId;
+                    response.ReferenceUid = message.Header?.Response?.Identifier;
                     response.StateAuxiliaryIdentifier = message.StateAuxiliaryId;
                     response.CertificateNumber = message.CertNo;
                     response.DeathJurisdictionID = message.JurisdictionId;
