@@ -298,7 +298,7 @@ namespace NVSSClient.Controllers
         // deathYear: the year of death in the VRDR record
         // jurisditionId: the jurisdiction Id in the VRDR record
         // certNo: the 5 digit certificate number in the VRDR record
-        [HttpGet("status/{deathYear}/{jurisdictionId}/{certNo}")]
+        [HttpGet("{deathYear}/{jurisdictionId}/{certNo}")]
         public ActionResult<List<RecordResponse>> GetRecordStatus(uint deathYear, string jurisdictionId, string certNo)
         {
             try 
