@@ -70,7 +70,7 @@ class SubmitRecordsDashboard extends React.Component {
   
       rows.push(firstRow);
 
-      if (this.isExpanded(record)) {
+      if (this.isExpanded(record) && this.state.messages[id] != null) {
         let msgs = [...Object.entries(this.state.messages[id])] || [];
         if (msgs.length > 0) {
           let messageHeaderRow = (
@@ -158,11 +158,14 @@ class SubmitRecordsDashboard extends React.Component {
       const records = Object.entries(this.state.records);  
       let allMessages = {};  
       records.map(([key, record]) => {
-        
-        const msgs = fetch('http://localhost:4300/record/'+record.deathYear+'/'+record.deathJurisdictionID+'/'+record.certificateNumber, {mode:'cors'})
-        .then(response => response.json())
-        .then(data => allMessages[key] = data)
-        .catch(error => console.log(error));
+        // confirm parameters are not null before making request
+        if (record.deathYear != null && record.deathJurisdictionID != null && record.certificateNumber != null)
+        {
+          const msgs = fetch('http://localhost:4300/record/'+record.deathYear+'/'+record.deathJurisdictionID+'/'+record.certificateNumber, {mode:'cors'})
+          .then(response => response.json())
+          .then(data => allMessages[key] = data)
+          .catch(error => console.log(error));
+        }
       });      
 
       this.setState({ messages: allMessages });
