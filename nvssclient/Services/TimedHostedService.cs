@@ -474,6 +474,11 @@ namespace NVSSClient.Services
                             // what if the M99.9 coded response comes back after the status and sets it back to Coded?
                             _logger.LogInformation("*** Updating status to Acknowledged for {0} {1} {2}", message.DeathYear, message.JurisdictionId, message.CertNo);
                             break;
+                        case "http://nchs.cdc.gov/vrdr_status":
+                            // the message has not been coded yet, the status should in theory already be ack'd but just in case
+                            original.Status = Models.MessageStatus.Acknowledged.ToString();
+                            Console.WriteLine("*** Updating status to Acknowledged for {0} {1} {2}", message.DeathYear, message.JurisdictionId, message.CertNo);
+                            break;
                         default:
                             // TODO should create an error
                             _logger.LogInformation($"*** Unknown message type {message.MessageType}");
