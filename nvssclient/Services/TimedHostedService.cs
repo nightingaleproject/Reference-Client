@@ -262,6 +262,11 @@ namespace NVSSClient.Services
                             _logger.LogInformation($"*** Received extraction error: {errMsg.MessageId}");
                             ProcessResponseMessage(errMsg);
                             break;
+                        case "http://nchs.cdc.gov/vrdr_status":
+                            StatusMessage statusMsg = BaseMessage.Parse<StatusMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                            _logger.LogInformation($"*** Received status error: {statusMsg.MessageId}");
+                            ProcessResponseMessage(statusMsg);
+                            break;
                         default:
                             _logger.LogInformation($"*** Unknown message type");
                             break;
@@ -459,6 +464,11 @@ namespace NVSSClient.Services
                             original.Status = Models.MessageStatus.Error.ToString();
                             _logger.LogInformation("*** Updating status to Error for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
                             break;
+                        case "http://nchs.cdc.gov/vrdr_status":
+                            // the message has not been coded yet, the status should in theory already be ack'd but just in case
+                            original.Status = Models.MessageStatus.Acknowledged.ToString();
+                            _logger.LogInformation("*** Updating status to Acknowledged for {0} {1} {2}", message.DeathYear, message.JurisdictionId, message.CertNo);
+                            break;
                         default:
                             // TODO should create an error
                             _logger.LogInformation($"*** Unknown message type {message.MessageType}");
@@ -480,7 +490,7 @@ namespace NVSSClient.Services
                     context.SaveChanges();
                     _logger.LogInformation($"*** Successfully recorded {message.GetType().Name} message {message.MessageId}");
 
-                    // create ACK message for the extraction error
+                    // create ACK message for the response message
                     AcknowledgementMessage ack = new AcknowledgementMessage(message);
                     HttpResponseMessage resp = await client.PostMessageAsync(ack);
                     if (!resp.IsSuccessStatusCode)
