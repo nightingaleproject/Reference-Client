@@ -5,17 +5,27 @@ p {
 }
 
 tr {
-  background-color: #dedede;
+  background-color: #a1adde;
+}
+
+tr.message-details-header {
+  background-color: #b0b5c8;
+}
+
+th.message-details-header {
+  background-color: #959fc5;
+  color: #ffffff;
+  padding: 5px 10px 5px 10px;
 }
 
 th {
-  background-color: #999;
+  background-color: #2f49b2;
   color: #ffffff;
   padding: 5px 10px 5px 10px;
 }
 
 td {
-  background-color: #dedede;
+  background-color: #fff;
   padding: 5px 40px 5px 40px;
 }
 
@@ -29,18 +39,18 @@ table {
   border-spacing: 0px;
 }
 
-tr:nth-child(odd) > td {
-  background-color: #aaa;
-  color: #fff;
-}
+// tr:nth-child(odd) > td {
+//   background-color: #a1adde;
+//   color: #fff;
+// }
 
 tr > td.player-details:last-child {
   border: none;
 }
 
-tr > td.player-details {
-  background-color: #fff;
-  color: #ddd;
+tr > td.message-details {
+  background-color: rgba(255, 255, 255, 0.84);
+  color: rgb(20, 18, 18);
   margin-bottom: 20px;
 }
 

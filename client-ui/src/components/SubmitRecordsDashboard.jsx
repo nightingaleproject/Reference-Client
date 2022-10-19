@@ -74,13 +74,13 @@ class SubmitRecordsDashboard extends React.Component {
         let msgs = [...Object.entries(this.state.messages[id])] || [];
         if (msgs.length > 0) {
           let messageHeaderRow = (
-            <tr>
-              <th style={{textAlign: "center"}}>Type</th>
-              <th style={{textAlign: "center"}}>Uri</th>
-              <th style={{textAlign: "center"}}>Uid</th>
-              <th style={{textAlign: "center"}}>Retries</th>
-              <th style={{textAlign: "center"}}>Status</th>
-              <th style={{textAlign: "center"}}>Details</th>
+            <tr className="message-details-header">
+              <th className="message-details-header" style={{textAlign: "center"}}>Type</th>
+              <th className="message-details-header" style={{textAlign: "center"}}>Uri</th>
+              <th className="message-details-header" style={{textAlign: "center"}}>Uid</th>
+              <th className="message-details-header" style={{textAlign: "center"}}>Retries</th>
+              <th className="message-details-header" style={{textAlign: "center"}}>Status</th>
+              <th className="message-details-header" style={{textAlign: "center"}}>Date Created</th>
             </tr>
           );
           rows.push(messageHeaderRow);  
@@ -94,23 +94,25 @@ class SubmitRecordsDashboard extends React.Component {
                 <td className="message-details">{msgs[i][1].message.uid}</td>
                 <td className="message-details">{msgs[i][1].message.retries}</td>
                 <td className="message-details">{msgs[i][1].message.status}</td>
-                <td></td>
+                <td className="message-details">{msgs[i][1].message.createdDate}</td>
               </tr>
             ); 
             messageRows.push(row);
-            for(let j=0; j < msgs[i][1].responses.length; j++){
-              let rsp = JSON.parse(msgs[i][1].responses[j]);
-              let respRow = (
-                <tr className="message-details">
-                  <td className="message-details">Response</td>
-                  <td className="message-details">{rsp.entry[0].resource.eventUri}</td>
-                  <td className="message-details">{rsp.entry[0].resource.id}</td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                </tr>
-              ); 
-              messageRows.push(respRow);
+            if (msgs[i][1].responses != null){
+              for(let j=0; j < msgs[i][1].responses.length; j++){
+                let rsp = JSON.parse(msgs[i][1].responses[j]);
+                let respRow = (
+                  <tr className="message-details">
+                    <td className="message-details">Response</td>
+                    <td className="message-details">{rsp.entry[0].resource.eventUri}</td>
+                    <td className="message-details">{rsp.entry[0].resource.id}</td>
+                    <td className="message-details"></td>
+                    <td className="message-details"></td>
+                    <td className="message-details">{msgs[i][1].message.createdDate}</td>
+                  </tr>
+                ); 
+                messageRows.push(respRow);
+              }
             }
           }
           rows.push(messageRows);
