@@ -18,27 +18,19 @@ class SubmitRecordsDashboard extends React.Component {
     }
 
     handleMessageHistory = details => {
-      console.log(details.message);
-      console.log(details.responses);
     }
   
     handleExpand = record => {
       let newExpandedRows = [...this.state.expandedRows];
-      let allExpanded = this.state.allExpanded;
       let idxFound = newExpandedRows.findIndex(id => {
         return id === record.id;
       });
   
       if (idxFound > -1) {
-        console.log("Collapsing " + record.id + " " + idxFound);
         newExpandedRows.splice(idxFound, 1);
       } else {
-        console.log("Expanding " + record.id);
         newExpandedRows.push(record.id);
       }
-  
-      console.log("Expanded rows");
-      console.log(newExpandedRows);
   
       this.setState({ expandedRows: [...newExpandedRows] });
     };
@@ -100,7 +92,7 @@ class SubmitRecordsDashboard extends React.Component {
             messageRows.push(row);
             if (msgs[i][1].responses != null){
               for(let j=0; j < msgs[i][1].responses.length; j++){
-                let rsp = JSON.parse(msgs[i][1].responses[j]);
+                let rsp = JSON.parse(msgs[i][1].responses[j].message);
                 let respRow = (
                   <tr className="message-details">
                     <td className="message-details">Response</td>
@@ -108,7 +100,7 @@ class SubmitRecordsDashboard extends React.Component {
                     <td className="message-details">{rsp.entry[0].resource.id}</td>
                     <td className="message-details"></td>
                     <td className="message-details"></td>
-                    <td className="message-details">{msgs[i][1].message.createdDate}</td>
+                    <td className="message-details">{msgs[i][1].responses[j].createdDate}</td>
                   </tr>
                 ); 
                 messageRows.push(respRow);

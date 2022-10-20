@@ -35,7 +35,7 @@ namespace NVSSClient.Controllers
         public class RecordResponse
         {
             public MessageItem Message {get; set;}          
-            public List<String> Responses  {get; set;}
+            public List<ResponseItem> Responses  {get; set;}
 
            
         }
@@ -270,8 +270,9 @@ namespace NVSSClient.Controllers
                         DeathYear = p.DeathYear
                     }).Distinct().ToList();
                     if (uniqueBussinessIds == null) {
-                        Console.WriteLine("Error Retrieving status of death records");
-                        return NotFound("Records not found");
+                        Console.WriteLine("No Records were found");
+                        // return an empty list
+                        return new List<MessageItem>();
                     }
                     
                     // for each set of business ids, find the latest submitted message and its status
@@ -325,7 +326,7 @@ namespace NVSSClient.Controllers
                             // TODO once we've added in response identifiers to link responses to submissions
                             // change the conditions from business ids to check for the response identifier
                             // so responses are specifically linked to the message that generated them
-                            List<String> respMsgs = context.ResponseItems.Where(s => s.ReferenceUid == msg.Uid).OrderByDescending(s => s.CreatedDate).Select(p => p.Message).ToList();
+                            List<ResponseItem> respMsgs = context.ResponseItems.Where(s => s.ReferenceUid == msg.Uid).OrderBy(s => s.CreatedDate).ToList();
                             recordResp.Responses = respMsgs;
                         }
                         recordResponses.Add(recordResp);

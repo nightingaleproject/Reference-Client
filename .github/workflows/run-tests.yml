@@ -24,3 +24,10 @@ jobs:
       run: dotnet restore
     - name: Client Tests
       run: dotnet test
+    - name: Use Node.js 17.x
+      working-directory: ./client-ui
+      uses: actions/setup-node@v1
+      with:
+        node-version: 17.x
+      run: npm install
+      run: npm test
