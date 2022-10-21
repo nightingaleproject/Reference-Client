@@ -33,7 +33,6 @@ namespace NVSSClient.tests
     public class TimedServiceShould : IClassFixture<CustomWebApplicationFactory<NVSSClient.Startup>>, IDisposable
     {
         private readonly CustomWebApplicationFactory<NVSSClient.Startup> _factory;
-        private readonly IServiceScopeFactory _scopeFactory;
         private readonly HttpClient _client;
 
         private ServiceProvider _serviceProvider;

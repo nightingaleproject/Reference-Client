@@ -18,31 +18,18 @@ class SubmitRecordsDashboard extends React.Component {
     }
 
     handleMessageHistory = details => {
+      // TODO: display the message contents to the user
     }
-  
-    handleExpand = record => {
-      let newExpandedRows = [...this.state.expandedRows];
-      let idxFound = newExpandedRows.findIndex(id => {
-        return id === record.id;
-      });
-  
-      if (idxFound > -1) {
-        newExpandedRows.splice(idxFound, 1);
-      } else {
-        newExpandedRows.push(record.id);
-      }
-  
-      this.setState({ expandedRows: [...newExpandedRows] });
-    };
-  
-    isExpanded = record => {
-      const idx = this.state.expandedRows.find(id => {
-        return id === record.id;
-      });
-  
-      return idx > -1;
-    };
 
+
+    handleExpand = record => {
+      const expandedRows = this.state.expandedRows;
+      if (expandedRows.includes(record.id)) {
+        this.setState({ expandedRows: expandedRows.filter(id => id !== record.id) });
+      } else {
+        this.setState({ expandedRows: expandedRows.concat(record.id) });
+      }
+    };
 
     getRows = (id, record) => {
       let rows = [];
@@ -55,14 +42,14 @@ class SubmitRecordsDashboard extends React.Component {
         <td style={{textAlign: "center"}}>{record.deathYear}</td>
         <td style={{textAlign: "center"}}>{record.status}</td>
         <button onClick={() => this.handleExpand(record)}>
-          {this.isExpanded(record) ? "-" : "+"}
+          {this.state.expandedRows.includes(record.id) ? "-" : "+"}
         </button>
       </tr>
       );
   
       rows.push(firstRow);
 
-      if (this.isExpanded(record) && this.state.messages[id] != null) {
+      if (this.state.expandedRows.includes(record.id) && this.state.messages[id] != null) {
         let msgs = [...Object.entries(this.state.messages[id])] || [];
         if (msgs.length > 0) {
           let messageHeaderRow = (
