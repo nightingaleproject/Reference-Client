@@ -28,5 +28,7 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: 17.x
+    - name: Run npm test
+      working-directory: ./client-ui  
       run: npm install
       run: npm test
