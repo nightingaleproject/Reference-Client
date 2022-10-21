@@ -114,10 +114,13 @@ namespace NVSSClient.Services
                
                 // Send Messages that have not yet been sent, i.e. status is "Pending"
                 var items = context.MessageItems.Where(s => s.Status == Models.MessageStatus.Pending.ToString()).ToList();
-                foreach (MessageItem item in items)
+                BaseMessage[] messages = items.Select(item => BaseMessage.Parse(item.Message.ToString(), true)).ToArray();
+                HttpResponseMessage[] responses = client.PostMessagesAsync(messages);
+                for (int idx = 0; idx < items.Count; idx++)
                 {
-                    BaseMessage message = BaseMessage.Parse(item.Message.ToString(), true);
-                    HttpResponseMessage response = await client.PostMessageAsync(message);
+                    MessageItem item = items[idx];
+                    BaseMessage message = messages[idx];
+                    HttpResponseMessage response = responses[idx];
                     if (response.IsSuccessStatusCode)
                     {
                         _logger.LogInformation($">>> Successfully submitted {message.MessageId} of type {message.GetType().Name}");
@@ -155,10 +158,13 @@ namespace NVSSClient.Services
                 // Don't resend ack'd messages or messages in an error state
                 DateTime currentTime = DateTime.UtcNow;
                 var items = context.MessageItems.Where(s => s.Status != Models.MessageStatus.Acknowledged.ToString() && s.Status != Models.MessageStatus.AcknowledgedAndCoded.ToString() && s.Status != Models.MessageStatus.Error.ToString() && s.ExpirationDate < currentTime).ToList();
-                foreach (MessageItem item in items)
+                BaseMessage[] messages = items.Select(item => BaseMessage.Parse(item.Message.ToString(), true)).ToArray();
+                HttpResponseMessage[] responses = client.PostMessagesAsync(messages);
+                for (int idx = 0; idx < items.Count; idx++)
                 {
-                    BaseMessage message = BaseMessage.Parse(item.Message.ToString(), true);
-                    HttpResponseMessage response = await client.PostMessageAsync(message);
+                    MessageItem item = items[idx];
+                    BaseMessage message = messages[idx];
+                    HttpResponseMessage response = responses[idx];
                     if (response.IsSuccessStatusCode)
                     {
                         _logger.LogInformation($">>> Successfully submitted {message.MessageId} of type {message.GetType().Name}");
