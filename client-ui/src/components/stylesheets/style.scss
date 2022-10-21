@@ -1,0 +1,89 @@
+body,
+h1,
+p {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+tr {
+  background-color: #a1adde;
+}
+
+tr.message-details-header {
+  background-color: #b0b5c8;
+}
+
+th.message-details-header {
+  background-color: #959fc5;
+  color: #ffffff;
+  padding: 5px 10px 5px 10px;
+}
+
+th {
+  background-color: #2f49b2;
+  color: #ffffff;
+  padding: 5px 10px 5px 10px;
+}
+
+td {
+  background-color: #fff;
+  padding: 5px 40px 5px 40px;
+}
+
+th:first-child,
+tr:first-child {
+  padding: 0;
+}
+
+table {
+  border-top: 1px solid blue;
+  border-spacing: 0px;
+}
+
+// tr:nth-child(odd) > td {
+//   background-color: #a1adde;
+//   color: #fff;
+// }
+
+tr > td.player-details:last-child {
+  border: none;
+}
+
+tr > td.message-details {
+  background-color: rgba(255, 255, 255, 0.84);
+  color: rgb(20, 18, 18);
+  margin-bottom: 20px;
+}
+
+tr > td:first-child,
+tr > th:first-child {
+  padding: 0;
+  padding-left: 6px;
+}
+
+button {
+  background-color: Transparent;
+  background-repeat: no-repeat;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  overflow: hidden;
+  outline: none;
+  font-size: 2em;
+}
+
+.attribute-name {
+  font-weight: bold;
+  color: #666;
+  float: left;
+  padding-left: 15px;
+}
+
+.attribute-value {
+  float: right;
+  padding-right: 15px;
+}
+
+.attribute {
+  border-top: 1px solid #eee;
+  padding: 15px;
+}

@@ -15,7 +15,14 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace NVSSClient.tests {
+/**
+    INSTRUCTIONS: Record Controller Tests are called explicity as part of the git runner.
+    Any new or updated tests should be updated in .github/workflows/run-tests.yml
+**/
+
+namespace NVSSClient.tests 
+{
+    [Collection("ClientIntegrationTests")]
     public class RecordControllerShould : IClassFixture<CustomWebApplicationFactory<NVSSClient.Startup>>
     {
         private readonly CustomWebApplicationFactory<NVSSClient.Startup> _factory;
@@ -155,7 +162,17 @@ namespace NVSSClient.tests {
         [Fact]
         public async Task GetMessageStatus_ReturnsMessages()
         {
-            var response = await _client.GetAsync("/record/status/2020/NY/182");
+            var response = await _client.GetAsync("/record/2020/NY/182");
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+            //Assert, for now just check it's not empty
+            Assert.False(String.IsNullOrWhiteSpace(responseString));
+        }
+
+        [Fact]
+        public async Task GetMessages_ReturnsMessages()
+        {
+            var response = await _client.GetAsync("/record");
             response.EnsureSuccessStatusCode();
             var responseString = await response.Content.ReadAsStringAsync();
             //Assert, for now just check it's not empty

@@ -1,0 +1,35 @@
+name: Run Test Suite on PR or push to main
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    services:
+      sql.data:
+        image: postgres
+        env:
+          POSTGRES_PASSWORD: mysecretpassword
+        ports:
+          - "5432:5432"
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+    - name: Install dependencies
+      run: dotnet restore
+    - name: Client Tests
+      run: dotnet test
+    - name: Use Node.js 17.x
+      uses: actions/setup-node@v1
+      with:
+        node-version: 17.x
+    - name: Run npm test
+      working-directory: ./client-ui  
+      run: | 
+        npm install
+        npm test

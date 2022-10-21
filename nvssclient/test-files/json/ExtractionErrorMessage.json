@@ -13,7 +13,7 @@
                 "destination": [{"endpoint": "nightingale"}],
                 "source": {"endpoint": "http://nchs.cdc.gov/vrdr_submission"},
                 "response": {
-                    "identifier": "a9d66d2e-2480-4e8d-bab3-4e4c761da1b7",
+                    "identifier": "DeathCertificateDocument-Example1",
                     "code": "fatal-error",
                     "details": {"reference": "28b5b3b5-25a2-4fc4-9dd6-21162b290787"}
                 },

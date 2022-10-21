@@ -27,11 +27,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace NVSSClient.tests {
+namespace NVSSClient.tests 
+{
+     [Collection("ClientIntegrationTests")]
     public class TimedServiceShould : IClassFixture<CustomWebApplicationFactory<NVSSClient.Startup>>, IDisposable
     {
         private readonly CustomWebApplicationFactory<NVSSClient.Startup> _factory;
-        private readonly IServiceScopeFactory _scopeFactory;
         private readonly HttpClient _client;
 
         private ServiceProvider _serviceProvider;
@@ -67,7 +68,7 @@ namespace NVSSClient.tests {
                 message.MessageSource = "https://example.com/jurisdiction/message/endpoint";
 
                 MessageItem item = new MessageItem();
-                item.Uid = message.MessageId;
+                item.Uid = "DeathCertificateDocument-Example1";
                 item.Message = message.ToJson().ToString();
                 
                 // Business Identifiers
@@ -83,6 +84,7 @@ namespace NVSSClient.tests {
                 // insert new message
                 context.MessageItems.Add(item);
                 context.SaveChanges();
+
             }
 
         }
@@ -281,7 +283,7 @@ namespace NVSSClient.tests {
             var timedService = _serviceProvider.GetService<IHostedService>() as TimedHostedService;
             StreamReader bundleReader = FixtureStream("test-files/json/BundleOfBundlesWithError.json");
             string bundleJson = bundleReader.ReadToEnd();
-            //Todo use an await
+            // Todo use an await
             // This should result in an extraction error that's added to the MessageItems table
             timedService.parseBundle(bundleJson);
 

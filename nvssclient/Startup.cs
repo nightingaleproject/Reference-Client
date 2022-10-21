@@ -46,6 +46,12 @@ namespace NVSSClient
 
             app.UseAuthorization();
 
+            app.Use((context, next) =>
+            {
+                context.Response.Headers["Access-Control-Allow-Origin"] = "*";
+                return next.Invoke();
+            });
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
