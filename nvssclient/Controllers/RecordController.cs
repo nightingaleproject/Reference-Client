@@ -19,7 +19,6 @@ namespace NVSSClient.Controllers
     public class RecordController : ControllerBase
     {
         private readonly AppDbContext _context;
-        private readonly IServiceProvider Services;
         private static String cs = "Host=localhost;Username=postgres;Password=mysecretpassword;Database=postgres";
         private readonly String _jurisdictionEndPoint;
         private static NpgsqlConnection con = new NpgsqlConnection(cs);
