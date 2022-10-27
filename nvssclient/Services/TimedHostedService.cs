@@ -422,6 +422,10 @@ namespace NVSSClient.Services
                             ExtractionErrorMessage errMsg = (ExtractionErrorMessage)message;
                             refID = errMsg.FailedMessageId;
                             break;
+                        case "http://nchs.cdc.gov/vrdr_status":
+                            StatusMessage statusMsg = (StatusMessage)message;
+                            refID = statusMsg.StatusedMessageId;
+                            break;
                         default:
                             _logger.LogInformation($"*** Unknown message type");
                             break;
@@ -465,8 +469,9 @@ namespace NVSSClient.Services
                             _logger.LogInformation("*** Updating status to Error for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
                             break;
                         case "http://nchs.cdc.gov/vrdr_status":
-                            // the message has not been coded yet, the status should in theory already be ack'd but just in case
-                            original.Status = Models.MessageStatus.Acknowledged.ToString();
+                            // TODO, a coded M99.9 is sent back for manual coding at the same time as a status meesage
+                            // so there isn't an obvious status to set here... should it be set to Coded? Ack'd?
+                            // what if the M99.9 coded response comes back after the status and sets it back to Coded?
                             _logger.LogInformation("*** Updating status to Acknowledged for {0} {1} {2}", message.DeathYear, message.JurisdictionId, message.CertNo);
                             break;
                         default:
