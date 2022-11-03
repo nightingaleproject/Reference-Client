@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using Microsoft.Extensions.Configuration;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -9,7 +8,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NVSSClient.Models;
 using NVSSClient.Controllers;
-using nvssclient.lib;
 using Hl7.Fhir.Serialization;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.ElementModel;
@@ -24,7 +22,7 @@ using VRDR;
 
 namespace NVSSClient.Services
 {
-        
+
     // The TimedHostedService runs every x seconds to pull new messages from the db, submit to the NVSS FHIR API Server, 
     // check for responses, and resend messages that haven't had a response in x time
     public class TimedHostedService : IHostedService, IDisposable
@@ -54,7 +52,8 @@ namespace NVSSClient.Services
             // Parse the config to create the client instance
             string apiUrl = Startup.StaticConfig.GetConnectionString("ApiServer");
             Boolean localDev = Startup.StaticConfig.GetValue<Boolean>("LocalTesting");
-            if (localDev) {
+            if (localDev)
+            {
                 apiUrl = Startup.StaticConfig.GetConnectionString("LocalServer");
             }
             client = new Client(apiUrl, localDev, creds);
@@ -67,7 +66,7 @@ namespace NVSSClient.Services
             _logger.LogInformation("Timed Hosted Service running.");
             int interval = Int32.Parse(Configuration["PollingInterval"]);
             _jurisdictionEndPoint = Configuration["JurisdictionEndpoint"];
-            _timer = new Timer(DoWork, null, TimeSpan.Zero, 
+            _timer = new Timer(DoWork, null, TimeSpan.Zero,
                 TimeSpan.FromSeconds(interval));
 
             return System.Threading.Tasks.Task.CompletedTask;
@@ -80,7 +79,7 @@ namespace NVSSClient.Services
 
             _logger.LogInformation(
                 "Timed Hosted Service is working. Count: {Count}", count);
-            
+
             // Step 1, submit new records in the db
             SubmitNewMessages();
             // Step 2, poll for response messages from the server
@@ -109,22 +108,27 @@ namespace NVSSClient.Services
         {
             // scope the db context, its not meant to last the whole life cycle
             // and we need to deconflict for other db calls
-            using (var scope = _scopeFactory.CreateScope()){
+            using (var scope = _scopeFactory.CreateScope())
+            {
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-               
+
                 // Send Messages that have not yet been sent, i.e. status is "Pending"
                 var items = context.MessageItems.Where(s => s.Status == Models.MessageStatus.Pending.ToString()).ToList();
-                foreach (MessageItem item in items)
+                List<BaseMessage> messages = items.Select(item => BaseMessage.Parse(item.Message.ToString(), true)).ToList();
+                _logger.LogInformation($">>> Submitting new messages to NCHS (count: {messages.Count()})...");
+                List<HttpResponseMessage> responses = await client.PostMessagesAsync(messages, 20); // POST messages in batches of 20
+                for (int idx = 0; idx < items.Count; idx++)
                 {
-                    BaseMessage message = BaseMessage.Parse(item.Message.ToString(), true);
-                    HttpResponseMessage response = await client.PostMessageAsync(message);
+                    MessageItem item = items[idx];
+                    BaseMessage message = messages[idx];
+                    HttpResponseMessage response = responses[idx];
                     if (response.IsSuccessStatusCode)
                     {
                         _logger.LogInformation($">>> Successfully submitted {message.MessageId} of type {message.GetType().Name}");
-                        item.Status = Models.MessageStatus.Sent.ToString();          
+                        item.Status = Models.MessageStatus.Sent.ToString();
                         DateTime currentTime = DateTime.UtcNow;
                         int resend = Int32.Parse(Configuration["ResendInterval"]);
-                        TimeSpan resendWindow = new TimeSpan(0,0,0,resend);
+                        TimeSpan resendWindow = new TimeSpan(0, 0, 0, resend);
                         DateTime expireTime = currentTime.Add(resendWindow);
                         item.ExpirationDate = expireTime;
                         context.Update(item);
@@ -148,17 +152,22 @@ namespace NVSSClient.Services
         {
             // scope the db context, its not meant to last the whole life cycle
             // and we need to deconflict for other db calls
-            using (var scope = _scopeFactory.CreateScope()){
+            using (var scope = _scopeFactory.CreateScope())
+            {
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-               
+
                 // Only selected unacknowledged Messages that have expired
                 // Don't resend ack'd messages or messages in an error state
                 DateTime currentTime = DateTime.UtcNow;
                 var items = context.MessageItems.Where(s => s.Status != Models.MessageStatus.Acknowledged.ToString() && s.Status != Models.MessageStatus.AcknowledgedAndCoded.ToString() && s.Status != Models.MessageStatus.Error.ToString() && s.ExpirationDate < currentTime).ToList();
-                foreach (MessageItem item in items)
+                List<BaseMessage> messages = items.Select(item => BaseMessage.Parse(item.Message.ToString(), true)).ToList();
+                _logger.LogInformation($">>> Resubmitting messages to NCHS (count: {messages.Count()})...");
+                List<HttpResponseMessage> responses = await client.PostMessagesAsync(messages, 20); // POST messages in batches of 20
+                for (int idx = 0; idx < items.Count; idx++)
                 {
-                    BaseMessage message = BaseMessage.Parse(item.Message.ToString(), true);
-                    HttpResponseMessage response = await client.PostMessageAsync(message);
+                    MessageItem item = items[idx];
+                    BaseMessage message = messages[idx];
+                    HttpResponseMessage response = responses[idx];
                     if (response.IsSuccessStatusCode)
                     {
                         _logger.LogInformation($">>> Successfully submitted {message.MessageId} of type {message.GetType().Name}");
@@ -167,10 +176,10 @@ namespace NVSSClient.Services
                         DateTime sentTime = DateTime.UtcNow;
                         // the exponential backoff multiplies the resend interval by the number of retries
                         int resend = Int32.Parse(Configuration["ResendInterval"]) * item.Retries;
-                        TimeSpan resendWindow = new TimeSpan(0,0,0,resend);
+                        TimeSpan resendWindow = new TimeSpan(0, 0, 0, resend);
                         DateTime expireTime = sentTime.Add(resendWindow);
                         item.ExpirationDate = expireTime;
-                        
+
                         context.Update(item);
                         context.SaveChanges();
                     }
@@ -191,6 +200,7 @@ namespace NVSSClient.Services
         private async void PollForResponses()
         {
             // GetMessageResponsesAsync will retrieve any new message responses from the server
+            _logger.LogInformation($">>> Retrieving new messages from NCHS...");
             HttpResponseMessage response = await client.GetMessageResponsesAsync();
             if (response.IsSuccessStatusCode)
             {
@@ -210,10 +220,11 @@ namespace NVSSClient.Services
 
         // TODO move to library?
         // ParseBundle parses the bundle of bundles from NVSS FHIR API server and processes each message response
-        public void parseBundle(String bundleOfBundles){
+        public void parseBundle(String bundleOfBundles)
+        {
             FhirJsonParser parser = new FhirJsonParser();
             Bundle bundle = parser.Parse<Bundle>(bundleOfBundles);
-            
+
             foreach (var entry in bundle.Entry)
             {
                 try
@@ -221,47 +232,47 @@ namespace NVSSClient.Services
                     BaseMessage msg = BaseMessage.Parse<BaseMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                     switch (msg.MessageType)
                     {
-                    case "http://nchs.cdc.gov/vrdr_acknowledgement":
-                        AcknowledgementMessage message = BaseMessage.Parse<AcknowledgementMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                        Console.WriteLine($"*** Received ack message: {message.MessageId} for {message.AckedMessageId}");
-                        ProcessAckMessage(message);
-                        break;
-                    case "http://nchs.cdc.gov/vrdr_causeofdeath_coding":
-                        CauseOfDeathCodingMessage codCodeMsg = BaseMessage.Parse<CauseOfDeathCodingMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                        Console.WriteLine($"*** Received coding message: {codCodeMsg.MessageId}");
-                        ProcessResponseMessage(codCodeMsg);
-                        break;
-                    case "http://nchs.cdc.gov/vrdr_demographics_coding":
-                        DemographicsCodingMessage demCodeMsg = BaseMessage.Parse<DemographicsCodingMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                        Console.WriteLine($"*** Received demographics coding message: {demCodeMsg.MessageId}");
-                        ProcessResponseMessage(demCodeMsg);
-                        break;
-                    case "http://nchs.cdc.gov/vrdr_causeofdeath_coding_update":
-                        CauseOfDeathCodingUpdateMessage codUpdateMsg = BaseMessage.Parse<CauseOfDeathCodingUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                        Console.WriteLine($"*** Received coding update message: {codUpdateMsg.MessageId}");
-                        ProcessResponseMessage(codUpdateMsg);
-                        break;
-                    case "http://nchs.cdc.gov/vrdr_demographics_coding_update":
-                        DemographicsCodingUpdateMessage demUpdateMsg = BaseMessage.Parse<DemographicsCodingUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                        Console.WriteLine($"*** Received demographics coding update message: {demUpdateMsg.MessageId}");
-                        ProcessResponseMessage(demUpdateMsg);
-                        break;
-                    case "http://nchs.cdc.gov/vrdr_extraction_error":
-                        ExtractionErrorMessage errMsg = BaseMessage.Parse<ExtractionErrorMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
-                        Console.WriteLine($"*** Received extraction error: {errMsg.MessageId}");
-                        ProcessResponseMessage(errMsg);
-                        break;
-                    default:
-                        Console.WriteLine($"*** Unknown message type");
-                        break;
+                        case "http://nchs.cdc.gov/vrdr_acknowledgement":
+                            AcknowledgementMessage message = BaseMessage.Parse<AcknowledgementMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                            _logger.LogInformation($"*** Received ack message: {message.MessageId} for {message.AckedMessageId}");
+                            ProcessAckMessage(message);
+                            break;
+                        case "http://nchs.cdc.gov/vrdr_causeofdeath_coding":
+                            CauseOfDeathCodingMessage codCodeMsg = BaseMessage.Parse<CauseOfDeathCodingMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                            _logger.LogInformation($"*** Received coding message: {codCodeMsg.MessageId}");
+                            ProcessResponseMessage(codCodeMsg);
+                            break;
+                        case "http://nchs.cdc.gov/vrdr_demographics_coding":
+                            DemographicsCodingMessage demCodeMsg = BaseMessage.Parse<DemographicsCodingMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                            _logger.LogInformation($"*** Received demographics coding message: {demCodeMsg.MessageId}");
+                            ProcessResponseMessage(demCodeMsg);
+                            break;
+                        case "http://nchs.cdc.gov/vrdr_causeofdeath_coding_update":
+                            CauseOfDeathCodingUpdateMessage codUpdateMsg = BaseMessage.Parse<CauseOfDeathCodingUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                            _logger.LogInformation($"*** Received coding update message: {codUpdateMsg.MessageId}");
+                            ProcessResponseMessage(codUpdateMsg);
+                            break;
+                        case "http://nchs.cdc.gov/vrdr_demographics_coding_update":
+                            DemographicsCodingUpdateMessage demUpdateMsg = BaseMessage.Parse<DemographicsCodingUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                            _logger.LogInformation($"*** Received demographics coding update message: {demUpdateMsg.MessageId}");
+                            ProcessResponseMessage(demUpdateMsg);
+                            break;
+                        case "http://nchs.cdc.gov/vrdr_extraction_error":
+                            ExtractionErrorMessage errMsg = BaseMessage.Parse<ExtractionErrorMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                            _logger.LogInformation($"*** Received extraction error: {errMsg.MessageId}");
+                            ProcessResponseMessage(errMsg);
+                            break;
+                        default:
+                            _logger.LogInformation($"*** Unknown message type");
+                            break;
                     }
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine($"*** Error parsing message: {e}");
+                    _logger.LogInformation($"*** Error parsing message: {e}");
                     // Extraction errors require acks so we insert them in the DB to send with other messages to NCHS
                     // Wrap this in another try catch so we can see any failures to create the extraction error in our logs
-                    try 
+                    try
                     {
                         Hl7.Fhir.Model.Bundle innerBundle = (Hl7.Fhir.Model.Bundle)entry.Resource;
                         // messageBundle?.Type != Bundle.BundleType.Message
@@ -275,39 +286,40 @@ namespace NVSSClient.Services
                         // to create the extraction error, pass in the message Id, 
                         // the destination endpoint, and the source 
                         ExtractionErrorMessage extError = new ExtractionErrorMessage(entry.Resource.Id, header?.Source?.Endpoint, _jurisdictionEndPoint);
-                        
-                        using (var scope = _scopeFactory.CreateScope()){
+
+                        using (var scope = _scopeFactory.CreateScope())
+                        {
                             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                             extError.MessageSource = _jurisdictionEndPoint;
 
                             MessageItem item = new MessageItem();
                             item.Uid = extError.MessageId;
                             item.Message = extError.ToJson().ToString();
-                            
+
                             // Business Identifiers
                             item.StateAuxiliaryIdentifier = extError.StateAuxiliaryId;
                             item.CertificateNumber = extError.CertNo;
                             item.DeathJurisdictionID = extError.JurisdictionId;
                             item.DeathYear = extError.DeathYear;
-                            Console.WriteLine("Business IDs {0}, {1}, {2}", extError.DeathYear, extError.CertNo, extError.JurisdictionId);
-                            
+                            _logger.LogInformation("Business IDs {0}, {1}, {2}", extError.DeathYear, extError.CertNo, extError.JurisdictionId);
+
                             // Status info
                             item.Status = Models.MessageStatus.Pending.ToString();
                             item.Retries = 0;
-                            
+
                             // insert new message
                             context.MessageItems.Add(item);
                             context.SaveChanges();
-                            Console.WriteLine($"Inserted message {item.Uid}");   
+                            _logger.LogInformation($"Inserted message {item.Uid}");
                         }
-                        Console.WriteLine($"*** Successfully queued extraction error message for message {entry.Resource.Id}");
+                        _logger.LogInformation($"*** Successfully queued extraction error message for message {entry.Resource.Id}");
                     }
                     catch (Exception e2)
                     {
                         // If we reach this point, the FHIR API Server should eventually resend the initial message 
                         // and we will try to process it again.
                         // If the parsing continues to fail, these logs will track the failures for debugging
-                        Console.WriteLine($"*** Failed to queue extraction error message for message {entry.Resource.Id}, error: {e2} ");
+                        _logger.LogInformation($"*** Failed to queue extraction error message for message {entry.Resource.Id}, error: {e2} ");
                     }
                 }
             }
@@ -318,16 +330,17 @@ namespace NVSSClient.Services
         // and updates the status of the Message it acknowledged. 
         public void ProcessAckMessage(AcknowledgementMessage message)
         {
-            try 
+            try
             {
-                using (var scope = _scopeFactory.CreateScope()){
+                using (var scope = _scopeFactory.CreateScope())
+                {
                     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    
+
                     // find the message the ack is for
                     var original = context.MessageItems.Where(s => s.Uid == message.AckedMessageId).FirstOrDefault();
                     if (original == null)
                     {
-                        Console.WriteLine($"*** Warning: ACK received for unknown message {message.AckedMessageId}");
+                        _logger.LogInformation($"*** Warning: ACK received for unknown message {message.AckedMessageId}");
                         return;
                     }
 
@@ -337,18 +350,19 @@ namespace NVSSClient.Services
                         original.Status = Models.MessageStatus.Acknowledged.ToString();
                         context.Update(original);
                         context.SaveChanges();
-                        Console.WriteLine($"*** Successfully acked message {original.Uid}");
+                        _logger.LogInformation($"*** Successfully acked message {original.Uid}");
                     }
                     else
                     {
-                        Console.WriteLine($"*** Ignored acknowledgement for previously acknowledged or coded message {original.Uid}");
+                        _logger.LogInformation($"*** Ignored acknowledgement for previously acknowledged or coded message {original.Uid}");
                     }
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
-                Console.WriteLine($"*** Error processing acknowledgement of {message.AckedMessageId}");
-                Console.WriteLine("\nException Caught!");
-                Console.WriteLine("*** Message :{0} ",e.Message);
+                _logger.LogInformation($"*** Error processing acknowledgement of {message.AckedMessageId}");
+                _logger.LogInformation("\nException Caught!");
+                _logger.LogInformation("*** Message :{0} ", e.Message);
             }
         }
 
@@ -356,23 +370,25 @@ namespace NVSSClient.Services
         // ProcessResponseMessage processes codings, coding updates, and extraction errors
         public async void ProcessResponseMessage(BaseMessage message)
         {
-            try 
+            try
             {
-                using (var scope = _scopeFactory.CreateScope()){
+                using (var scope = _scopeFactory.CreateScope())
+                {
                     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                    
+
                     // check if this response message is a duplicate
                     // if it is a duplicate resend the ack
                     int count = context.ResponseItems.Where(m => m.Uid == message.MessageId).Count();
-                    if (count > 0) {
-                        Console.WriteLine($"*** Received duplicate message with Id: {message.MessageId}, ignore and resend ack");
-                        
+                    if (count > 0)
+                    {
+                        _logger.LogInformation($"*** Received duplicate message with Id: {message.MessageId}, ignore and resend ack");
+
                         // create ACK message for the response
                         AcknowledgementMessage ackDuplicate = new AcknowledgementMessage(message);
                         HttpResponseMessage rsp = await client.PostMessageAsync(BaseMessage.Parse(ackDuplicate.ToJson().ToString(), true));
                         if (!rsp.IsSuccessStatusCode)
                         {
-                            Console.WriteLine($"*** Failed to send ack for message {message.MessageId}");
+                            _logger.LogInformation($"*** Failed to send ack for message {message.MessageId}");
                         }
                         return;
                     }
@@ -381,35 +397,35 @@ namespace NVSSClient.Services
                     string refID = null;
                     switch (message.MessageType)
                     {
-                    case "http://nchs.cdc.gov/vrdr_causeofdeath_coding":
-                        CauseOfDeathCodingMessage codCodeMsg = (CauseOfDeathCodingMessage)message;
-                        refID = codCodeMsg.CodedMessageId;
-                        break;
-                    case "http://nchs.cdc.gov/vrdr_demographics_coding":
-                        DemographicsCodingMessage demCodeMsg = (DemographicsCodingMessage)message;
-                        refID = demCodeMsg.CodedMessageId;
-                        break;
-                    case "http://nchs.cdc.gov/vrdr_causeofdeath_coding_update":
-                        CauseOfDeathCodingUpdateMessage codUpdateMsg = (CauseOfDeathCodingUpdateMessage)message;
-                        refID = codUpdateMsg.CodedMessageId;
-                        break;
-                    case "http://nchs.cdc.gov/vrdr_demographics_coding_update":
-                        DemographicsCodingUpdateMessage demUpdateMsg = (DemographicsCodingUpdateMessage)message;
-                        refID = demUpdateMsg.CodedMessageId;
-                        break;
-                    case "http://nchs.cdc.gov/vrdr_extraction_error":
-                        ExtractionErrorMessage errMsg = (ExtractionErrorMessage)message;
-                        refID = errMsg.FailedMessageId;
-                        break;
-                    default:
-                        Console.WriteLine($"*** Unknown message type");
-                        break;
+                        case "http://nchs.cdc.gov/vrdr_causeofdeath_coding":
+                            CauseOfDeathCodingMessage codCodeMsg = (CauseOfDeathCodingMessage)message;
+                            refID = codCodeMsg.CodedMessageId;
+                            break;
+                        case "http://nchs.cdc.gov/vrdr_demographics_coding":
+                            DemographicsCodingMessage demCodeMsg = (DemographicsCodingMessage)message;
+                            refID = demCodeMsg.CodedMessageId;
+                            break;
+                        case "http://nchs.cdc.gov/vrdr_causeofdeath_coding_update":
+                            CauseOfDeathCodingUpdateMessage codUpdateMsg = (CauseOfDeathCodingUpdateMessage)message;
+                            refID = codUpdateMsg.CodedMessageId;
+                            break;
+                        case "http://nchs.cdc.gov/vrdr_demographics_coding_update":
+                            DemographicsCodingUpdateMessage demUpdateMsg = (DemographicsCodingUpdateMessage)message;
+                            refID = demUpdateMsg.CodedMessageId;
+                            break;
+                        case "http://nchs.cdc.gov/vrdr_extraction_error":
+                            ExtractionErrorMessage errMsg = (ExtractionErrorMessage)message;
+                            refID = errMsg.FailedMessageId;
+                            break;
+                        default:
+                            _logger.LogInformation($"*** Unknown message type");
+                            break;
                     }
 
                     if (String.IsNullOrEmpty(refID))
                     {
                         // TODO determine if an error message should be sent in this case
-                        Console.WriteLine($"*** Warning: Response received for unknown message {refID} ({message.MessageId} {message.DeathYear} {message.JurisdictionId} {message.CertNo})");
+                        _logger.LogInformation($"*** Warning: Response received for unknown message {refID} ({message.MessageId} {message.DeathYear} {message.JurisdictionId} {message.CertNo})");
                         return;
                     }
                     // there should only be one message with the given reference id
@@ -417,7 +433,7 @@ namespace NVSSClient.Services
                     if (original == null)
                     {
                         // TODO determine if an error message should be sent in this case
-                        Console.WriteLine($"*** Warning: Response received for unknown message {refID} ({message.MessageId} {message.DeathYear} {message.JurisdictionId} {message.CertNo})");
+                        _logger.LogInformation($"*** Warning: Response received for unknown message {refID} ({message.MessageId} {message.DeathYear} {message.JurisdictionId} {message.CertNo})");
                         return;
                     }
                     // Update the status
@@ -425,27 +441,27 @@ namespace NVSSClient.Services
                     {
                         case "http://nchs.cdc.gov/vrdr_causeofdeath_coding":
                             original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
-                            Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
+                            _logger.LogInformation("*** Updating status to AcknowledgedAndCoded for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
                             break;
                         case "http://nchs.cdc.gov/vrdr_causeofdeath_coding_update":
                             original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
-                            Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
+                            _logger.LogInformation("*** Updating status to AcknowledgedAndCoded for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
                             break;
                         case "http://nchs.cdc.gov/vrdr_demographics_coding":
                             original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
-                            Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
+                            _logger.LogInformation("*** Updating status to AcknowledgedAndCoded for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
                             break;
                         case "http://nchs.cdc.gov/vrdr_demographics_coding_update":
                             original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
-                            Console.WriteLine("*** Updating status to AcknowledgedAndCoded for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
+                            _logger.LogInformation("*** Updating status to AcknowledgedAndCoded for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
                             break;
                         case "http://nchs.cdc.gov/vrdr_extraction_error":
                             original.Status = Models.MessageStatus.Error.ToString();
-                            Console.WriteLine("*** Updating status to Error for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
+                            _logger.LogInformation("*** Updating status to Error for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
                             break;
                         default:
                             // TODO should create an error
-                            Console.WriteLine($"*** Unknown message type {message.MessageType}");
+                            _logger.LogInformation($"*** Unknown message type {message.MessageType}");
                             break;
                     }
                     context.Update(original);
@@ -462,21 +478,22 @@ namespace NVSSClient.Services
                     context.ResponseItems.Add(response);
 
                     context.SaveChanges();
-                    Console.WriteLine($"*** Successfully recorded {message.GetType().Name} message {message.MessageId}");
+                    _logger.LogInformation($"*** Successfully recorded {message.GetType().Name} message {message.MessageId}");
 
                     // create ACK message for the extraction error
                     AcknowledgementMessage ack = new AcknowledgementMessage(message);
                     HttpResponseMessage resp = await client.PostMessageAsync(ack);
                     if (!resp.IsSuccessStatusCode)
                     {
-                        Console.WriteLine($"*** Failed to send ack for message {message.MessageId}");
+                        _logger.LogInformation($"*** Failed to send ack for message {message.MessageId}");
                     }
                 }
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
-                Console.WriteLine($"*** Error processing incoming coding or error message {message.MessageId}");
-                Console.WriteLine("\nException Caught!");
-                Console.WriteLine("*** Message :{0} ",e.Message);
+                _logger.LogInformation($"*** Error processing incoming coding or error message {message.MessageId}");
+                _logger.LogInformation("\nException Caught!");
+                _logger.LogInformation("*** Message :{0} ", e.Message);
             }
         }
     }

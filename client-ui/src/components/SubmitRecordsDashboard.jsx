@@ -3,7 +3,7 @@
 // into how the data flows between systems
 import React from "react";
 import "./stylesheets/style.scss";
-import {Button, Table} from "react-bootstrap";
+import { Table } from "react-bootstrap";
 
 class SubmitRecordsDashboard extends React.Component {
 
@@ -138,11 +138,11 @@ class SubmitRecordsDashboard extends React.Component {
       // get the message history for all records  
       const records = Object.entries(this.state.records);  
       let allMessages = {};  
-      records.map(([key, record]) => {
+      records.forEach(([key, record]) => {
         // confirm parameters are not null before making request
         if (record.deathYear != null && record.deathJurisdictionID != null && record.certificateNumber != null)
         {
-          const msgs = fetch('http://localhost:4300/record/'+record.deathYear+'/'+record.deathJurisdictionID+'/'+record.certificateNumber, {mode:'cors'})
+          fetch('http://localhost:4300/record/'+record.deathYear+'/'+record.deathJurisdictionID+'/'+record.certificateNumber, {mode:'cors'})
           .then(response => response.json())
           .then(data => allMessages[key] = data)
           .catch(error => console.log(error));
@@ -162,4 +162,4 @@ class SubmitRecordsDashboard extends React.Component {
     }
   
   }
-export default SubmitRecordsDashboard
+export default SubmitRecordsDashboard;
