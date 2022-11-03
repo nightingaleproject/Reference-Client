@@ -262,6 +262,11 @@ namespace NVSSClient.Services
                             _logger.LogInformation($"*** Received extraction error: {errMsg.MessageId}");
                             ProcessResponseMessage(errMsg);
                             break;
+                        case "http://nchs.cdc.gov/vrdr_status":
+                            StatusMessage statusMsg = BaseMessage.Parse<StatusMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
+                            _logger.LogInformation($"*** Received status error: {statusMsg.MessageId}");
+                            ProcessResponseMessage(statusMsg);
+                            break;
                         default:
                             _logger.LogInformation($"*** Unknown message type");
                             break;
@@ -417,6 +422,10 @@ namespace NVSSClient.Services
                             ExtractionErrorMessage errMsg = (ExtractionErrorMessage)message;
                             refID = errMsg.FailedMessageId;
                             break;
+                        case "http://nchs.cdc.gov/vrdr_status":
+                            StatusMessage statusMsg = (StatusMessage)message;
+                            refID = statusMsg.StatusedMessageId;
+                            break;
                         default:
                             _logger.LogInformation($"*** Unknown message type");
                             break;
@@ -459,6 +468,12 @@ namespace NVSSClient.Services
                             original.Status = Models.MessageStatus.Error.ToString();
                             _logger.LogInformation("*** Updating status to Error for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
                             break;
+                        case "http://nchs.cdc.gov/vrdr_status":
+                            // TODO, a coded M99.9 is sent back for manual coding at the same time as a status meesage
+                            // so there isn't an obvious status to set here... should it be set to Coded? Ack'd?
+                            // what if the M99.9 coded response comes back after the status and sets it back to Coded?
+                            _logger.LogInformation("*** Updating status to Acknowledged for {0} {1} {2}", message.DeathYear, message.JurisdictionId, message.CertNo);
+                            break;
                         default:
                             // TODO should create an error
                             _logger.LogInformation($"*** Unknown message type {message.MessageType}");
@@ -480,7 +495,7 @@ namespace NVSSClient.Services
                     context.SaveChanges();
                     _logger.LogInformation($"*** Successfully recorded {message.GetType().Name} message {message.MessageId}");
 
-                    // create ACK message for the extraction error
+                    // create ACK message for the response message
                     AcknowledgementMessage ack = new AcknowledgementMessage(message);
                     HttpResponseMessage resp = await client.PostMessageAsync(ack);
                     if (!resp.IsSuccessStatusCode)

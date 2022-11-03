@@ -318,16 +318,10 @@ namespace NVSSClient.Controllers
                     {
                         RecordResponse recordResp = new RecordResponse();
                         recordResp.Message = msg;
-                        // check if there are response messages 
-                        if (msg.Status == MessageStatus.Error.ToString() || msg.Status == MessageStatus.AcknowledgedAndCoded.ToString())
-                        {
-                            // get the response messages with these business ids
-                            // TODO once we've added in response identifiers to link responses to submissions
-                            // change the conditions from business ids to check for the response identifier
-                            // so responses are specifically linked to the message that generated them
-                            List<ResponseItem> respMsgs = context.ResponseItems.Where(s => s.ReferenceUid == msg.Uid).OrderBy(s => s.CreatedDate).ToList();
-                            recordResp.Responses = respMsgs;
-                        }
+                        // get the response messages with the provided message reference uid
+                        List<ResponseItem> respMsgs = context.ResponseItems.Where(s => s.ReferenceUid == msg.Uid).OrderBy(s => s.CreatedDate).ToList();
+                        recordResp.Responses = respMsgs;
+
                         recordResponses.Add(recordResp);
 
                     }
