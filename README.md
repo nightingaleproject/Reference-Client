@@ -82,7 +82,7 @@ The client implementation has endpoints to submit VRDR records, update records, 
    1. Parameters: 
       1. deathYear: the year of death in the VRDR record 
       2. jurisditionId: the jurisdiction Id in the VRDR record
-      3. certNo: the 5 digit certificate number in the VRDR record
+      3. certNo: the 6 digit certificate number in the VRDR record
    2. Function: Retrieves the most recent MessageItem with business identifiers that match the provided parameters
    3. Response: A successful request returns `200 OK` and a JSON object with the MessageItem and it's Extraction Error or Coded Response if available
 
