@@ -495,13 +495,17 @@ namespace NVSSClient.Services
                     context.SaveChanges();
                     _logger.LogInformation($"*** Successfully recorded {message.GetType().Name} message {message.MessageId}");
 
-                    // create ACK message for the response message
-                    AcknowledgementMessage ack = new AcknowledgementMessage(message);
-                    HttpResponseMessage resp = await client.PostMessageAsync(ack);
-                    if (!resp.IsSuccessStatusCode)
+                    // create ACK message for coding response messages, status messages and extraction errors do not get ack'd
+                    if (message.MessageType != "http://nchs.cdc.gov/vrdr_extraction_error" && message.MessageType != "http://nchs.cdc.gov/vrdr_status")
                     {
-                        _logger.LogInformation($"*** Failed to send ack for message {message.MessageId}");
+                        AcknowledgementMessage ack = new AcknowledgementMessage(message);
+                        HttpResponseMessage resp = await client.PostMessageAsync(ack);
+                        if (!resp.IsSuccessStatusCode)
+                        {
+                            _logger.LogInformation($"*** Failed to send ack for message {message.MessageId}");
+                        }
                     }
+
                 }
             }
             catch (Exception e)
