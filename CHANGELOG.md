@@ -1,6 +1,7 @@
 ## Changelog
 
-### upcoming changes
+### v0.3.0 - 2022-12-28
+* Update library to v4.0.0-preview16
 * Refactor most common functionality for jurisdictions in the VRDR.Client library
 
 ### v0.2.0 - 2022-03-16
