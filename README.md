@@ -118,19 +118,20 @@ This project uses dotnet and docker to run the local database.
 ## Local Development Setup
 1. Set up the database docker containers
     1. Run `docker-compose up --build` to initialize the client db (postgres) and the NVSS API Server db (mssql)
-    2. From the reference-client-api/nvssclient directory, run `dotnet ef database update` to intialize the client's db
-2. Download the reference-nchs-api code from https://gitlab.mitre.org/nightingale/reference-nchs-api   
-    1. make sure the db password in appsettings.json matches the one set in the docker compose file
-    2. from the reference-nchs-api/messaging project directory run `dotnet ef database update` to initialize the NVSS API Server's db
-    3. from the reference-nchs-api directory run the NVSS API Server with `dotnet run --project messaging`
-3.  Configure the client implementation to connect to the local NVSS API Server
+2.  Configure the client implementation to connect to the local NVSS API Server
     1.  Create an `appsettings.json` file from the `appsettings.json.sample` file
     2.  In `appsettings.json` set `"ClientDatabase"` to your database connection string
     3.  In `appsettings.json` set `"LocalTesting" : true`
     4.  In `appsettings.json` set `"LocalServer":"https://localhost:5001/bundles"`
     5.  In `appsettings.json` set `"ResendInterval"` to your desired interval. The recommended length in production is 4 hours, or 14400 seconds. If you are testing the resend implementation then you may want to set it to a shorter interval like 10 seconds to see results quickly.
     6. In `appsettings.json` set `"PollingInterval"` to the frequency you want to poll for new responses. In production, 1 hour may be a good interval to use, but for testing an interval like 30 seconds may be better for seeing results quickly.
-4.  Now that the client db, NVSS API Server db, and the NVSS API Server are all up and running, go to the reference-client-api/nvssclient project directory and run
+3. Initialize the client's db
+    1. From the reference-client-api/nvssclient directory, run `dotnet ef database update` to intialize the client's db
+4. Download the reference-nchs-api code from https://gitlab.mitre.org/nightingale/reference-nchs-api   
+    1. make sure the db password in appsettings.json matches the one set in the Reference-Client's docker compose file
+    2. from the reference-nchs-api/messaging project directory run `dotnet ef database update` to initialize the NVSS API Server's db
+    3. from the reference-nchs-api directory run the NVSS API Server with `dotnet run --project messaging`
+5.  Now that the client db, NVSS API Server db, and the NVSS API Server are all up and running, go to the reference-client-api/nvssclient project directory and run
     ```
     dotnet run
     ```
