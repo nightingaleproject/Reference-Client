@@ -141,6 +141,9 @@ namespace NVSSClient.Services
                     else
                     {
                         _logger.LogError($">>> Error submitting {message.MessageId}, status: {response.StatusCode}");
+                        item.Status = Models.MessageStatus.Error.ToString();
+                        context.Update(item);
+                        context.SaveChanges();
                     }
                 }
             } //scope (and context) gets destroyed here
@@ -201,6 +204,7 @@ namespace NVSSClient.Services
         {
             // GetMessageResponsesAsync will retrieve any new message responses from the server
             _logger.LogInformation($">>> Retrieving new messages from NCHS...");
+            Console.WriteLine(client.Url);
             HttpResponseMessage response = await client.GetMessageResponsesAsync();
             if (response.IsSuccessStatusCode)
             {
