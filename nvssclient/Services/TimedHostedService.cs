@@ -275,12 +275,12 @@ namespace NVSSClient.Services
                 catch (Exception e)
                 {
                     _logger.LogInformation($"*** Error parsing message: {e}");
-                    // Extraction errors require acks so we insert them in the DB to send with other messages to NCHS
-                    // Wrap this in another try catch so we can see any failures to create the extraction error in our logs
+                    // NCHS does not handle extraction errors, but storing an extraction message in the client
+                    // db will help keep a record of errors so they can be reported to NCHS manually
+                    // Create and insert the extraction error, but set the status to error so it is not sent to NCHS
                     try
                     {
                         Hl7.Fhir.Model.Bundle innerBundle = (Hl7.Fhir.Model.Bundle)entry.Resource;
-                        // messageBundle?.Type != Bundle.BundleType.Message
                         var headerEntry = innerBundle.Entry.FirstOrDefault(entry2 => entry2.Resource is MessageHeader);
                         if (headerEntry == null)
                         {
@@ -309,7 +309,7 @@ namespace NVSSClient.Services
                             _logger.LogInformation("Business IDs {0}, {1}, {2}", extError.DeathYear, extError.CertNo, extError.JurisdictionId);
 
                             // Status info
-                            item.Status = Models.MessageStatus.Pending.ToString();
+                            item.Status = Models.MessageStatus.Error.ToString();
                             item.Retries = 0;
 
                             // insert new message
@@ -317,14 +317,14 @@ namespace NVSSClient.Services
                             context.SaveChanges();
                             _logger.LogInformation($"Inserted message {item.Uid}");
                         }
-                        _logger.LogInformation($"*** Successfully queued extraction error message for message {entry.Resource.Id}");
+                        _logger.LogInformation($"*** Successfully stored extraction error message for error reporting {entry.Resource.Id}");
                     }
                     catch (Exception e2)
                     {
                         // If we reach this point, the FHIR API Server should eventually resend the initial message 
                         // and we will try to process it again.
                         // If the parsing continues to fail, these logs will track the failures for debugging
-                        _logger.LogInformation($"*** Failed to queue extraction error message for message {entry.Resource.Id}, error: {e2} ");
+                        _logger.LogInformation($"*** Failed to store extraction error message for message {entry.Resource.Id}, error: {e2} ");
                     }
                 }
             }
