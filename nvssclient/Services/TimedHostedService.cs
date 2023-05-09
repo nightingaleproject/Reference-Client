@@ -134,13 +134,19 @@ namespace NVSSClient.Services
                         context.Update(item);
                         context.SaveChanges();
                     }
-                    else if (response.StatusCode == HttpStatusCode.Unauthorized)
-                    {
-                        _logger.LogError($">>> Unauthorized error submitting {message.MessageId}, status: {response.StatusCode}");
-                    }
                     else
                     {
-                        _logger.LogError($">>> Error submitting {message.MessageId}, status: {response.StatusCode}");
+                        if (response.StatusCode == HttpStatusCode.Unauthorized)
+                        {
+                            _logger.LogError($">>> Unauthorized error submitting {message.MessageId}, status: {response.StatusCode}");
+                        }
+                        else
+                        {
+                            _logger.LogError($">>> Error submitting {message.MessageId}, status: {response.StatusCode}");
+                        }
+                        item.Status = Models.MessageStatus.Error.ToString();
+                        context.Update(item);
+                        context.SaveChanges();
                     }
                 }
             } //scope (and context) gets destroyed here
@@ -183,13 +189,19 @@ namespace NVSSClient.Services
                         context.Update(item);
                         context.SaveChanges();
                     }
-                    else if (response.StatusCode == HttpStatusCode.Unauthorized)
-                    {
-                        _logger.LogError($">>> Unauthorized error submitting {message.MessageId}, status: {response.StatusCode}");
-                    }
                     else
                     {
-                        _logger.LogError($">>> Error submitting {message.MessageId}, status: {response.StatusCode}");
+                        if (response.StatusCode == HttpStatusCode.Unauthorized)
+                        {
+                            _logger.LogError($">>> Unauthorized error submitting {message.MessageId}, status: {response.StatusCode}");
+                        }
+                        else
+                        {
+                            _logger.LogError($">>> Error submitting {message.MessageId}, status: {response.StatusCode}");
+                        }
+                        item.Status = Models.MessageStatus.Error.ToString();
+                        context.Update(item);
+                        context.SaveChanges();
                     }
                 }
             } //scope (and context) gets destroyed here
