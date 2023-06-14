@@ -138,6 +138,13 @@ namespace NVSSClient.Services
                     {
                         _logger.LogError($">>> Unauthorized error submitting {message.MessageId}, status: {response.StatusCode}");
                     }
+                    else if (response.StatusCode == HttpStatusCode.BadRequest)
+                    {
+                        _logger.LogError($">>> Error submitting {message.MessageId} due to an issue with the submission, status: {response.StatusCode}");
+                        item.Status = Models.MessageStatus.Error.ToString();
+                        context.Update(item);
+                        context.SaveChanges();
+                    }
                     else
                     {
                         _logger.LogError($">>> Error submitting {message.MessageId}, status: {response.StatusCode}");
@@ -186,6 +193,13 @@ namespace NVSSClient.Services
                     else if (response.StatusCode == HttpStatusCode.Unauthorized)
                     {
                         _logger.LogError($">>> Unauthorized error submitting {message.MessageId}, status: {response.StatusCode}");
+                    }
+                    else if (response.StatusCode == HttpStatusCode.BadRequest)
+                    {
+                        _logger.LogError($">>> Error submitting {message.MessageId} due to an issue with the submission, status: {response.StatusCode}");
+                        item.Status = Models.MessageStatus.Error.ToString();
+                        context.Update(item);
+                        context.SaveChanges();
                     }
                     else
                     {
