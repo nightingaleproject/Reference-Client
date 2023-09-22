@@ -21,5 +21,6 @@
     "JurisdictionEndpoint": "https://example.com/jurisdiction/message/endpoint",
     "LocalTesting" : false,
     "ResendInterval" : 14400,
-    "PollingInterval" : 60
+    "PollingInterval" : 60,
+    "MaximumResendRetries" : 5
 }
