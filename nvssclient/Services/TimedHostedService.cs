@@ -156,9 +156,8 @@ namespace NVSSClient.Services
             using (var scope = _scopeFactory.CreateScope())
             {
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
                 // The maximum number of resend retries a message should have.
-                int maxRetries = Int32.Parse(Configuration["MaximumResendRetries"]);
+                int maxRetries = Configuration != null ? Int32.Parse(Configuration["MaximumResendRetries"]) : 5;
                 // Messages that have exceeded max retries are stores in this list and should be sent in an email.
                 // Implementers will need to set up their email service to send notifications from. A starting point is:
                 // https://learn.microsoft.com/en-us/dotnet/api/system.net.mail.smtpclient?view=net-7.0
