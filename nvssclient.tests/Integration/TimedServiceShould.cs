@@ -300,6 +300,77 @@ namespace NVSSClient.tests
             }
         }
 
+        [Fact]
+        public async void TestMaxRetriesAsync()
+        {
+
+            int msgItems; 
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                context.Database.EnsureCreated();
+                msgItems = context.MessageItems.Count();
+            }
+
+            string uid = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+
+            using (var scope = _serviceProvider.CreateScope())
+            {
+
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                context.Database.EnsureCreated();
+
+                // Create an invalid FHIR DeathRecord message to guarantee failure responses from the API.
+                DeathRecord record = new DeathRecord("{}");
+                var message = new DeathRecordSubmissionMessage(record);
+                message.JurisdictionId = "FL";
+                message.CertNo = 78901;
+                message.DeathYear = 2021;
+                message.MessageSource = "https://example.com/jurisdiction/message/endpoint";
+
+                MessageItem item = new MessageItem();
+                item.Uid = uid;
+                item.Message = message.ToJson().ToString();
+                
+                // Business Identifiers
+                item.StateAuxiliaryIdentifier = message.StateAuxiliaryId;
+                item.CertificateNumber = message.CertNo;
+                item.DeathJurisdictionID = message.JurisdictionId;
+                item.DeathYear = message.DeathYear;
+                
+                // Status info
+                // item.Status = Models.MessageStatus.Acknowledged.ToString();
+                item.ExpirationDate = DateTime.MinValue;
+                item.Retries = 0;
+                
+                // insert new message
+                context.MessageItems.Add(item);
+                context.SaveChanges();
+            }
+
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var timedService = _serviceProvider.GetService<IHostedService>() as TimedHostedService;
+                var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var newMsgItems = context.MessageItems.Count();
+                Assert.Equal(1, newMsgItems - msgItems);
+                Assert.Equal(1, context.MessageItems.Where(s => s.Uid == uid && s.Retries == 0).Count());
+                await System.Threading.Tasks.Task.Run(() => timedService.ResendMessages());
+                Assert.Equal(1, context.MessageItems.Where(s => s.Uid == uid && s.Retries == 1).Count());
+                await System.Threading.Tasks.Task.Run(() => timedService.ResendMessages());
+                Assert.Equal(1, context.MessageItems.Where(s => s.Uid == uid && s.Retries == 2).Count());
+                await System.Threading.Tasks.Task.Run(() => timedService.ResendMessages());
+                Assert.Equal(1, context.MessageItems.Where(s => s.Uid == uid && s.Retries == 3).Count());
+                await System.Threading.Tasks.Task.Run(() => timedService.ResendMessages());
+                Assert.Equal(1, context.MessageItems.Where(s => s.Uid == uid && s.Retries == 4).Count());
+                await System.Threading.Tasks.Task.Run(() => timedService.ResendMessages());
+                Assert.Equal(1, context.MessageItems.Where(s => s.Uid == uid && s.Retries == 5).Count());
+                // Past 5 resends, it should stop retrying and thus not increment the number of retries.
+                await System.Threading.Tasks.Task.Run(() => timedService.ResendMessages());
+                Assert.Equal(1, context.MessageItems.Where(s => s.Uid == uid && s.Retries == 5).Count());
+            }
+        }
+
         private Bundle GetBundleOfBundleResponses(string filePath, string msgType)
         {
             Console.WriteLine("Test parse bundle");
