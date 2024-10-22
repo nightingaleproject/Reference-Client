@@ -47,7 +47,8 @@ namespace NVSSClient.Services
             string clientSecret = Startup.StaticConfig.GetValue<string>("Authentication:ClientSecret");
             string username = Startup.StaticConfig.GetValue<string>("Authentication:Username");
             string pass = Startup.StaticConfig.GetValue<string>("Authentication:Password");
-            Credentials creds = new Credentials(authUrl, clientId, clientSecret, username, pass);
+            string scope = Startup.StaticConfig.GetValue<string>("Authentication:Scope");
+            Credentials creds = new Credentials(authUrl, clientId, clientSecret, username, pass, scope);
 
             // Parse the config to create the client instance
             string apiUrl = Startup.StaticConfig.GetConnectionString("ApiServer");

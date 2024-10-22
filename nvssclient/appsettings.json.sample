@@ -16,7 +16,8 @@
         "ClientId": "theclientid",
         "ClientSecret": "theclientsecret",
         "Username":"user",
-        "Password":"password"
+        "Password":"password",
+        "Scope": "openid profile email"
     },
     "JurisdictionEndpoint": "https://example.com/jurisdiction/message/endpoint",
     "LocalTesting" : false,
