@@ -103,7 +103,8 @@ This project uses dotnet and docker to run the local database.
     4. In `appsettings.json` set `"AuthServer": "https://apigw.cdc.gov/OSELS/NCHS/NVSSFHIRAPI/<jurisidction-id>/Bundles"`
     5. In `appsettings.json` fill out the `"Authentication"` section to authenticate to the server via oauth, contact admin for your credentials
     6. In `appsettings.json` set `"ResendInterval"` to your desired interval. The recommended length in production is 4 hours, or 14400 seconds. If you are testing the resend implementation then you may want to set it to a shorter interval like 10 seconds to see results quickly.
-    7. In `appsettings.json` set `"PollingInterval"` to the frequency you want to poll for new responses. In production, 1 hour may be a good interval to use, but for testing an interval like 30 seconds may be better for seeing results quickly.
+    7. In `appsettings.json` set `"MaxiumumResendRetries"` to the desired amount of attempted resend retries a message should have when failing to send it to the API. The recommended default is 5, after which it should send an email with the id of the issue message.
+    8. In `appsettings.json` set `"PollingInterval"` to the frequency you want to poll for new responses. In production, 1 hour may be a good interval to use, but for testing an interval like 30 seconds may be better for seeing results quickly.
 3. Set up OAuth 
    1. OAuth is required to authenticate to the NVSS API Server. Contact the NVSS server team to acquire your client id, client secret, username, and password.
    2. In `appsettings.json` set `"ClientId": "<your-client-id>"`
@@ -129,7 +130,8 @@ This project uses dotnet and docker to run the local database.
     3.  In `appsettings.json` set `"LocalTesting" : true`
     4.  In `appsettings.json` set `"LocalServer":"https://localhost:5001/bundles"`
     5.  In `appsettings.json` set `"ResendInterval"` to your desired interval. The recommended length in production is 4 hours, or 14400 seconds. If you are testing the resend implementation then you may want to set it to a shorter interval like 10 seconds to see results quickly.
-    6. In `appsettings.json` set `"PollingInterval"` to the frequency you want to poll for new responses. In production, 1 hour may be a good interval to use, but for testing an interval like 30 seconds may be better for seeing results quickly.
+    6. In `appsettings.json` set `"MaxiumumResendRetries"` to the desired amount of attempted resend retries a message should have when failing to send it to the API. The recommended default is 5, after which it should send an email with the id of the issue message.
+    7. In `appsettings.json` set `"PollingInterval"` to the frequency you want to poll for new responses. In production, 1 hour may be a good interval to use, but for testing an interval like 30 seconds may be better for seeing results quickly.
 4.  Now that the client db, NVSS API Server db, and the NVSS API Server are all up and running, go to the reference-client-api/nvssclient project directory and run
     ```
     dotnet run

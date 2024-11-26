@@ -1,23 +1,17 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NVSSClient.Models;
-using NVSSClient.Controllers;
 using Hl7.Fhir.Serialization;
 using Hl7.Fhir.Model;
-using Hl7.Fhir.ElementModel;
 
-using System.Text;
 using System.Net;
 using System.Net.Http;
-using System.Text.Json;
 using System.Linq;
-using Newtonsoft.Json.Linq;
 using VRDR;
 
 namespace NVSSClient.Services
@@ -163,49 +157,66 @@ namespace NVSSClient.Services
             using (var scope = _scopeFactory.CreateScope())
             {
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                // The maximum number of resend retries a message should have.
+                int maxRetries = Configuration != null ? Int32.Parse(Configuration["MaximumResendRetries"]) : 5;
+                // Messages that have exceeded max retries are stores in this list and should be sent in an email.
+                // Implementers will need to set up their email service to send notifications from. A starting point is:
+                // https://learn.microsoft.com/en-us/dotnet/api/system.net.mail.smtpclient?view=net-7.0
+                List<MessageItem> messagesExceededMaxRetries = new();
 
                 // Only selected unacknowledged Messages that have expired
                 // Don't resend ack'd messages or messages in an error state
                 DateTime currentTime = DateTime.UtcNow;
-                var items = context.MessageItems.Where(s => s.Status != Models.MessageStatus.Acknowledged.ToString() && s.Status != Models.MessageStatus.AcknowledgedAndCoded.ToString() && s.Status != Models.MessageStatus.Error.ToString() && s.ExpirationDate < currentTime).ToList();
+                var items = context.MessageItems.Where(s => s.Status != Models.MessageStatus.Acknowledged.ToString() && s.Status != Models.MessageStatus.AcknowledgedAndCoded.ToString() && s.Status != Models.MessageStatus.Error.ToString() && s.ExpirationDate < currentTime && s.Retries < maxRetries).ToList();
                 List<BaseMessage> messages = items.Select(item => BaseMessage.Parse(item.Message.ToString(), true)).ToList();
                 _logger.LogInformation($">>> Resubmitting messages to NCHS (count: {messages.Count()})...");
                 List<HttpResponseMessage> responses = await client.PostMessagesAsync(messages, 20); // POST messages in batches of 20
+
+                // When should these messages be sent by email?
+                // Should there be a flag in the database that indicates whether a max retries message has been sent?
+
                 for (int idx = 0; idx < items.Count; idx++)
                 {
                     MessageItem item = items[idx];
                     BaseMessage message = messages[idx];
                     HttpResponseMessage response = responses[idx];
+                    item.Retries++;
                     if (response.IsSuccessStatusCode)
                     {
                         _logger.LogInformation($">>> Successfully submitted {message.MessageId} of type {message.GetType().Name}");
                         item.Status = Models.MessageStatus.Sent.ToString();
-                        item.Retries = item.Retries + 1;
                         DateTime sentTime = DateTime.UtcNow;
                         // the exponential backoff multiplies the resend interval by the number of retries
                         int resend = Int32.Parse(Configuration["ResendInterval"]) * item.Retries;
                         TimeSpan resendWindow = new TimeSpan(0, 0, 0, resend);
                         DateTime expireTime = sentTime.Add(resendWindow);
                         item.ExpirationDate = expireTime;
-
-                        context.Update(item);
-                        context.SaveChanges();
                     }
                     else if (response.StatusCode == HttpStatusCode.Unauthorized)
                     {
                         _logger.LogError($">>> Unauthorized error submitting {message.MessageId}, status: {response.StatusCode}");
+                        if (item.Retries >= maxRetries) {
+                            messagesExceededMaxRetries.Add(item);
+                        }
                     }
                     else if (response.StatusCode == HttpStatusCode.BadRequest)
                     {
                         _logger.LogError($">>> Error submitting {message.MessageId} due to an issue with the submission, status: {response.StatusCode}");
                         item.Status = Models.MessageStatus.Error.ToString();
-                        context.Update(item);
-                        context.SaveChanges();
+                        if (item.Retries >= maxRetries) {
+                            messagesExceededMaxRetries.Add(item);
+                        }
+                        // How does this path notify the user of this error?
                     }
                     else
                     {
+                        if (item.Retries >= maxRetries) {
+                            messagesExceededMaxRetries.Add(item);
+                        }
                         _logger.LogError($">>> Error submitting {message.MessageId}, status: {response.StatusCode}");
                     }
+                    context.Update(item);
+                    context.SaveChanges();
                 }
             } //scope (and context) gets destroyed here
         }
