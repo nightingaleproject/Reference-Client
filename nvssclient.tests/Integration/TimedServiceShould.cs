@@ -46,7 +46,7 @@ namespace NVSSClient.tests
 
             Console.WriteLine(_factory.Configuration);
             _serviceProvider = new ServiceCollection()
-            .AddDbContext<AppDbContext>(options => options.UseNpgsql("Host=localhost;Username=postgres;Password=mysecretpassword;Database=postgres;"))
+            .AddDbContext<AppDbContext>(options => options.UseNpgsql("Host=localhost;Username=postgres;Password=Kas9ya!@;Database=postgres;"))
             .AddLogging()
             .AddScoped<IConfiguration>(_ => _factory.Configuration)
             .AddSingleton<IHostedService, TimedHostedService>()
