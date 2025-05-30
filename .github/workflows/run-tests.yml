@@ -1,6 +1,7 @@
 name: Run Test Suite on PR or push to main
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
   pull_request:
