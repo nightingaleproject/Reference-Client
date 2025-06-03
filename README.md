@@ -94,8 +94,9 @@ This project uses dotnet and docker to run the local database.
 
 ## NVSS Development Setup
 1. Set up the database docker containers
-    1. Run `docker-compose up --build` to initialize the client db (postgres)
-    2. From the reference-client-api/nvssclient directory, run `dotnet ef database update` to intialize the client's db
+    1. Create sapassword.env with `SA_PASSWORD=<your$strongPassword>`
+	2. Run `docker-compose up --build` to initialize the client db (postgres)
+    3. From the reference-client-api/nvssclient directory, run `dotnet ef database update` to intialize the client's db
 2.  Configure the client implementation to connect to the development NVSS API Server
     1. Create an `appsettings.json` file from the `appsettings.json.sample` file
     2. In `appsettings.json` set `"LocalTesting" : false`
@@ -117,8 +118,9 @@ This project uses dotnet and docker to run the local database.
 
 ## Local Development Setup
 1. Set up the database docker containers
-    1. Run `docker-compose up --build` to initialize the client db (postgres) and the NVSS API Server db (mssql)
-    2. From the reference-client-api/nvssclient directory, run `dotnet ef database update` to intialize the client's db
+    1. Create sapassword.env with `SA_PASSWORD=<your$strongPassword>`
+	2. Run `docker-compose up --build` to initialize the client db (postgres) and the NVSS API Server db (mssql)
+    3. From the reference-client-api/nvssclient directory, run `dotnet ef database update` to intialize the client's db
 2. Download the reference-nchs-api code from https://gitlab.mitre.org/nightingale/reference-nchs-api   
     1. make sure the db password in appsettings.json matches the one set in the docker compose file
     2. from the reference-nchs-api/messaging project directory run `dotnet ef database update` to initialize the NVSS API Server's db
