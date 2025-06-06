@@ -1,11 +1,14 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
-using Microsoft.EntityFrameworkCore;
 using NVSSClient.Models;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace NVSSClient
 {
@@ -15,6 +18,7 @@ namespace NVSSClient
         {
             Configuration = configuration;
             StaticConfig = configuration;
+  //          ValidateKestrelSettings();
         }
 
         public IConfiguration Configuration { get; }
@@ -32,7 +36,8 @@ namespace NVSSClient
             //services.AddDbContext<AppContext>(options => options.UseMySql(Configuration.GetConnectionString("ClientDatabase")));
             // *** SQL server ***
             //services.AddDbContext<AppContext>(options => options.UseSqlServer(Configuration.GetConnectionString("ClientDatabase")));
-            
+            services.AddOptions<AppConfig>().Bind(Configuration).ValidateDataAnnotations().ValidateOnStart();
+ 
             services.AddControllers();
         }
 
@@ -57,5 +62,28 @@ namespace NVSSClient
                 endpoints.MapControllers();
             });
         }
+
+
+        //private void ValidateKestrelSettings()
+        //{
+        //    var kestrelSettings = new KestrelSettings();
+        //    Configuration.GetSection("Kestrel").Bind(kestrelSettings);
+
+        //    var validationContext = new ValidationContext(kestrelSettings, serviceProvider: null, items: null);
+        //    var validationResults = new List<ValidationResult>();
+
+        //    if (!Validator.TryValidateObject(kestrelSettings, validationContext, validationResults, validateAllProperties: true))
+        //    {
+        //        // Log or throw exceptions for validation failures
+        //        foreach (var validationResult in validationResults)
+        //        {
+        //            Console.WriteLine($"Validation Error: {validationResult.ErrorMessage}");
+        //            // Optionally throw an exception to stop application startup
+        //            // throw new InvalidOperationException($"Configuration validation failed: {validationResult.ErrorMessage}");
+        //        }
+        //        throw new InvalidOperationException("Kestrel configuration is invalid. Please check appsettings.json.");
+        //    }
+        //    Console.WriteLine("Kestrel configuration validated successfully.");
+        //}
     }
 }
