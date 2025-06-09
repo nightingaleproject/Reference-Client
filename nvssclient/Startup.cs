@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using NVSSClient.Models;
 
 
@@ -10,10 +11,12 @@ namespace NVSSClient
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        private readonly IWebHostEnvironment env;
+        public Startup(IConfiguration configuration, IWebHostEnvironment env)
         {
             Configuration = configuration;
             StaticConfig = configuration;
+            this.env = env;
         }
 
         public IConfiguration Configuration { get; }
@@ -31,8 +34,12 @@ namespace NVSSClient
             //services.AddDbContext<AppContext>(options => options.UseMySql(Configuration.GetConnectionString("ClientDatabase")));
             // *** SQL server ***
             //services.AddDbContext<AppContext>(options => options.UseSqlServer(Configuration.GetConnectionString("ClientDatabase")));
-            services.AddOptions<AppConfig>().Bind(Configuration).ValidateDataAnnotations().ValidateOnStart();
- 
+
+            if (!env.IsDevelopment())
+            {
+                services.AddOptions<AppConfig>().Bind(Configuration).ValidateDataAnnotations().ValidateOnStart();
+            }
+
             services.AddControllers();
         }
 
