@@ -17,8 +17,8 @@ jobs:
         ports:
           - "5432:5432"
     runs-on: ubuntu-latest
-    env: 
-      ENVIRONMENT: development
+    env:
+      ASPNETCORE_ENVIRONMENT: Development
     strategy:
       matrix:
         dotnet-version: [6.0.100]
