@@ -17,7 +17,8 @@ jobs:
         ports:
           - "5432:5432"
     runs-on: ubuntu-latest
-    environment: development
+    env: 
+      environment: development
     strategy:
       matrix:
         dotnet-version: [6.0.100]
