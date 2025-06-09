@@ -35,7 +35,7 @@ namespace NVSSClient
             // *** SQL server ***
             //services.AddDbContext<AppContext>(options => options.UseSqlServer(Configuration.GetConnectionString("ClientDatabase")));
 
-            if (env.IsDevelopment())
+            if (!env.IsDevelopment())
             {
                 services.AddOptions<AppConfig>().Bind(Configuration).ValidateDataAnnotations().ValidateOnStart();
             }
