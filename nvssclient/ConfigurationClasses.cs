@@ -22,7 +22,8 @@
         public string JurisdictionEndpoint { get; set; }
 
         [Required(ErrorMessage = "The 'LocalTesting' setting is required.")]
-        public bool LocalTesting { get; set; }
+        [RegularExpression("^(True|False)$", ErrorMessage = "The value must be True or False.")]
+        public string LocalTesting { get; set; }
 
         [Required(ErrorMessage = "The 'ResendInterval' setting is required.")]
         [Range(1, int.MaxValue, ErrorMessage = "The 'ResendInterval' must be a positive integer.")]
