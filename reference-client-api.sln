@@ -1,19 +1,22 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.30114.105
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36202.13 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NVSSClient", "nvssclient\NVSSClient.csproj", "{984ED031-1C4E-4A31-8C09-CF6AABA457D3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "nvssclient.tests", "nvssclient.tests\nvssclient.tests.csproj", "{86F9A390-94D1-4A3D-8CA6-FAA0BC21948E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VitalRecord.Messaging", "..\Workspaces\nightingaleproject\vital-records-dotnet\projects\VitalRecord.Messaging\VitalRecord.Messaging.csproj", "{EB807AE1-7EC6-6708-F509-728FBBB7A807}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VitalRecord.Client", "..\Workspaces\nightingaleproject\vital-records-dotnet\projects\VitalRecord.Client\VitalRecord.Client.csproj", "{ADF17C96-28F4-CF03-FAC4-77D921A61B9F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VRDR.Messaging", "..\Workspaces\nightingaleproject\vital-records-dotnet\projects\VRDR.Messaging\VRDR.Messaging.csproj", "{2EBF8473-1BCC-BCBD-DAC5-CD3E99AA241A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{984ED031-1C4E-4A31-8C09-CF6AABA457D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -24,5 +27,23 @@ Global
 		{86F9A390-94D1-4A3D-8CA6-FAA0BC21948E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{86F9A390-94D1-4A3D-8CA6-FAA0BC21948E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{86F9A390-94D1-4A3D-8CA6-FAA0BC21948E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EB807AE1-7EC6-6708-F509-728FBBB7A807}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EB807AE1-7EC6-6708-F509-728FBBB7A807}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EB807AE1-7EC6-6708-F509-728FBBB7A807}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EB807AE1-7EC6-6708-F509-728FBBB7A807}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ADF17C96-28F4-CF03-FAC4-77D921A61B9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ADF17C96-28F4-CF03-FAC4-77D921A61B9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ADF17C96-28F4-CF03-FAC4-77D921A61B9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ADF17C96-28F4-CF03-FAC4-77D921A61B9F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2EBF8473-1BCC-BCBD-DAC5-CD3E99AA241A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2EBF8473-1BCC-BCBD-DAC5-CD3E99AA241A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2EBF8473-1BCC-BCBD-DAC5-CD3E99AA241A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2EBF8473-1BCC-BCBD-DAC5-CD3E99AA241A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1E0346DD-B729-4F7E-9033-28917DE4BB36}
 	EndGlobalSection
 EndGlobal

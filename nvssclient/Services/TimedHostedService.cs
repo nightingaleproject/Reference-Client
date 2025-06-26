@@ -18,6 +18,8 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Linq;
 using Newtonsoft.Json.Linq;
+
+using VR;
 using VRDR;
 
 namespace NVSSClient.Services
@@ -28,7 +30,7 @@ namespace NVSSClient.Services
     public class TimedHostedService : IHostedService, IDisposable
     {
         private static String lastUpdated = new DateTime().ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
-        private Client client;
+        private VR.Client client;
         private int executionCount = 0;
         private readonly ILogger<TimedHostedService> _logger;
         private readonly IServiceScopeFactory _scopeFactory;
@@ -48,7 +50,7 @@ namespace NVSSClient.Services
             string username = Startup.StaticConfig.GetValue<string>("Authentication:Username");
             string pass = Startup.StaticConfig.GetValue<string>("Authentication:Password");
             string scope = Startup.StaticConfig.GetValue<string>("Authentication:Scope");
-            Credentials creds = new Credentials(authUrl, clientId, clientSecret, username, pass, scope);
+            VR.Credentials creds = new VR.Credentials(authUrl, clientId, clientSecret, username, pass, scope);
 
             // Parse the config to create the client instance
             string apiUrl = Startup.StaticConfig.GetConnectionString("ApiServer");
@@ -57,7 +59,7 @@ namespace NVSSClient.Services
             {
                 apiUrl = Startup.StaticConfig.GetConnectionString("LocalServer");
             }
-            client = new Client(apiUrl, localDev, creds);
+            client = new VR.Client(apiUrl, localDev, creds);
         }
         public IConfiguration Configuration { get; }
 
@@ -115,13 +117,15 @@ namespace NVSSClient.Services
 
                 // Send Messages that have not yet been sent, i.e. status is "Pending"
                 var items = context.MessageItems.Where(s => s.Status == Models.MessageStatus.Pending.ToString()).ToList();
-                List<BaseMessage> messages = items.Select(item => BaseMessage.Parse(item.Message.ToString(), true)).ToList();
+                List<CommonMessage> messages = items.Select(item => CommonMessage.ParseGenericMessage(item.Message.ToString(), true)).ToList();
+
+                //               List <CommonMessage> messages = items.Select(item => BaseMessage.Parse(item.Message.ToString(), true)).ToList();
                 _logger.LogInformation($">>> Submitting new messages to NCHS (count: {messages.Count()})...");
                 List<HttpResponseMessage> responses = await client.PostMessagesAsync(messages, 20); // POST messages in batches of 20
                 for (int idx = 0; idx < items.Count; idx++)
                 {
                     MessageItem item = items[idx];
-                    BaseMessage message = messages[idx];
+                    CommonMessage message = messages[idx];
                     HttpResponseMessage response = responses[idx];
                     if (response.IsSuccessStatusCode)
                     {
@@ -154,6 +158,9 @@ namespace NVSSClient.Services
             } //scope (and context) gets destroyed here
         }
 
+
+
+
         // ResendMessages supports reliable delivery of messages, it finds Messages in the DB that have not been acknowledged 
         // and have exceeded their expiration date. It resends the selected Messages to the NVSS FHIR API
         public async void ResendMessages()
@@ -168,13 +175,13 @@ namespace NVSSClient.Services
                 // Don't resend ack'd messages or messages in an error state
                 DateTime currentTime = DateTime.UtcNow;
                 var items = context.MessageItems.Where(s => s.Status != Models.MessageStatus.Acknowledged.ToString() && s.Status != Models.MessageStatus.AcknowledgedAndCoded.ToString() && s.Status != Models.MessageStatus.Error.ToString() && s.ExpirationDate < currentTime).ToList();
-                List<BaseMessage> messages = items.Select(item => BaseMessage.Parse(item.Message.ToString(), true)).ToList();
+                List<CommonMessage> messages = items.Select(item => CommonMessage.ParseGenericMessage(item.Message.ToString(), true)).ToList();
                 _logger.LogInformation($">>> Resubmitting messages to NCHS (count: {messages.Count()})...");
                 List<HttpResponseMessage> responses = await client.PostMessagesAsync(messages, 20); // POST messages in batches of 20
                 for (int idx = 0; idx < items.Count; idx++)
                 {
                     MessageItem item = items[idx];
-                    BaseMessage message = messages[idx];
+                    CommonMessage message = messages[idx];
                     HttpResponseMessage response = responses[idx];
                     if (response.IsSuccessStatusCode)
                     {
@@ -348,7 +355,7 @@ namespace NVSSClient.Services
         // TODO move to library?
         // ProcessAckMessage parses an AckMessage from the server
         // and updates the status of the Message it acknowledged. 
-        public void ProcessAckMessage(AcknowledgementMessage message)
+        public void ProcessAckMessage(CommonMessage message)
         {
             try
             {
@@ -357,10 +364,10 @@ namespace NVSSClient.Services
                     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
                     // find the message the ack is for
-                    var original = context.MessageItems.Where(s => s.Uid == message.AckedMessageId).FirstOrDefault();
+                    var original = context.MessageItems.Where(s => s.Uid == message.MessageId).FirstOrDefault();
                     if (original == null)
                     {
-                        _logger.LogInformation($"*** Warning: ACK received for unknown message {message.AckedMessageId}");
+                        _logger.LogInformation($"*** Warning: ACK received for unknown message {message.MessageId}");
                         return;
                     }
 
@@ -380,7 +387,7 @@ namespace NVSSClient.Services
             }
             catch (Exception e)
             {
-                _logger.LogInformation($"*** Error processing acknowledgement of {message.AckedMessageId}");
+                _logger.LogInformation($"*** Error processing acknowledgement of {message.MessageId}");
                 _logger.LogInformation("\nException Caught!");
                 _logger.LogInformation("*** Message :{0} ", e.Message);
             }
@@ -388,7 +395,7 @@ namespace NVSSClient.Services
 
         // TODO move to library?
         // ProcessResponseMessage processes codings, coding updates, and extraction errors
-        public async void ProcessResponseMessage(BaseMessage message)
+        public async void ProcessResponseMessage(CommonMessage message)
         {
             try
             {
@@ -404,8 +411,8 @@ namespace NVSSClient.Services
                         _logger.LogInformation($"*** Received duplicate message with Id: {message.MessageId}, ignore and resend ack");
 
                         // create ACK message for the response
-                        AcknowledgementMessage ackDuplicate = new AcknowledgementMessage(message);
-                        HttpResponseMessage rsp = await client.PostMessageAsync(BaseMessage.Parse(ackDuplicate.ToJson().ToString(), true));
+                        //         AcknowledgementMessage ackDuplicate = new AcknowledgementMessage(message);
+                        HttpResponseMessage rsp = await client.PostMessageAsync(CommonMessage.ParseGenericMessage(message.ToJson().ToString(), true));
                         if (!rsp.IsSuccessStatusCode)
                         {
                             _logger.LogInformation($"*** Failed to send ack for message {message.MessageId}");
@@ -449,7 +456,7 @@ namespace NVSSClient.Services
                     if (String.IsNullOrEmpty(refID))
                     {
                         // TODO determine if an error message should be sent in this case
-                        _logger.LogInformation($"*** Warning: Response received for unknown message {refID} ({message.MessageId} {message.DeathYear} {message.JurisdictionId} {message.CertNo})");
+                        _logger.LogInformation($"*** Warning: Response received for unknown message {refID} ({message.MessageId} {message.EventYear} {message.JurisdictionId} {message.CertNo})");
                         return;
                     }
                     // there should only be one message with the given reference id
@@ -457,7 +464,7 @@ namespace NVSSClient.Services
                     if (original == null)
                     {
                         // TODO determine if an error message should be sent in this case
-                        _logger.LogInformation($"*** Warning: Response received for unknown message {refID} ({message.MessageId} {message.DeathYear} {message.JurisdictionId} {message.CertNo})");
+                        _logger.LogInformation($"*** Warning: Response received for unknown message {refID} ({message.MessageId} {message.EventYear} {message.JurisdictionId} {message.CertNo})");
                         return;
                     }
                     // Update the status
@@ -465,29 +472,29 @@ namespace NVSSClient.Services
                     {
                         case "http://nchs.cdc.gov/vrdr_causeofdeath_coding":
                             original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
-                            _logger.LogInformation("*** Updating status to AcknowledgedAndCoded for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
+                            _logger.LogInformation("*** Updating status to AcknowledgedAndCoded for {0} {1} {2} {3}", refID, message.EventYear, message.JurisdictionId, message.CertNo);
                             break;
                         case "http://nchs.cdc.gov/vrdr_causeofdeath_coding_update":
                             original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
-                            _logger.LogInformation("*** Updating status to AcknowledgedAndCoded for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
+                            _logger.LogInformation("*** Updating status to AcknowledgedAndCoded for {0} {1} {2} {3}", refID, message.EventYear, message.JurisdictionId, message.CertNo);
                             break;
                         case "http://nchs.cdc.gov/vrdr_demographics_coding":
                             original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
-                            _logger.LogInformation("*** Updating status to AcknowledgedAndCoded for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
+                            _logger.LogInformation("*** Updating status to AcknowledgedAndCoded for {0} {1} {2} {3}", refID, message.EventYear, message.JurisdictionId, message.CertNo);
                             break;
                         case "http://nchs.cdc.gov/vrdr_demographics_coding_update":
                             original.Status = Models.MessageStatus.AcknowledgedAndCoded.ToString();
-                            _logger.LogInformation("*** Updating status to AcknowledgedAndCoded for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
+                            _logger.LogInformation("*** Updating status to AcknowledgedAndCoded for {0} {1} {2} {3}", refID, message.EventYear, message.JurisdictionId, message.CertNo);
                             break;
                         case "http://nchs.cdc.gov/vrdr_extraction_error":
                             original.Status = Models.MessageStatus.Error.ToString();
-                            _logger.LogInformation("*** Updating status to Error for {0} {1} {2} {3}", refID, message.DeathYear, message.JurisdictionId, message.CertNo);
+                            _logger.LogInformation("*** Updating status to Error for {0} {1} {2} {3}", refID, message.EventYear, message.JurisdictionId, message.CertNo);
                             break;
                         case "http://nchs.cdc.gov/vrdr_status":
                             // TODO, a coded M99.9 is sent back for manual coding at the same time as a status meesage
                             // so there isn't an obvious status to set here... should it be set to Coded? Ack'd?
                             // what if the M99.9 coded response comes back after the status and sets it back to Coded?
-                            _logger.LogInformation("*** Updating status to Acknowledged for {0} {1} {2}", message.DeathYear, message.JurisdictionId, message.CertNo);
+                            _logger.LogInformation("*** Updating status to Acknowledged for {0} {1} {2}", message.EventYear, message.JurisdictionId, message.CertNo);
                             break;
                         default:
                             // TODO should create an error
@@ -503,7 +510,7 @@ namespace NVSSClient.Services
                     response.StateAuxiliaryIdentifier = message.StateAuxiliaryId;
                     response.CertificateNumber = message.CertNo;
                     response.DeathJurisdictionID = message.JurisdictionId;
-                    response.DeathYear = message.DeathYear;
+                    response.DeathYear = message.EventYear;//message.DeathYear;
                     response.Message = message.ToJson().ToString();
                     context.ResponseItems.Add(response);
 
@@ -513,8 +520,8 @@ namespace NVSSClient.Services
                     // create ACK message for coding response messages, status messages and extraction errors do not get ack'd
                     if (message.MessageType != "http://nchs.cdc.gov/vrdr_extraction_error" && message.MessageType != "http://nchs.cdc.gov/vrdr_status")
                     {
-                        AcknowledgementMessage ack = new AcknowledgementMessage(message);
-                        HttpResponseMessage resp = await client.PostMessageAsync(ack);
+                        // AcknowledgementMessage ack = new AcknowledgementMessage(message);
+                        HttpResponseMessage resp = await client.PostMessageAsync(message);
                         if (!resp.IsSuccessStatusCode)
                         {
                             _logger.LogInformation($"*** Failed to send ack for message {message.MessageId}");
