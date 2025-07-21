@@ -10,8 +10,11 @@ namespace NVSSClient.Models
         public String ReferenceUid { get; set; }
         public String StateAuxiliaryIdentifier { get; set; }
         public uint? CertificateNumber { get; set; }
-        public uint? DeathYear {get; set;}
-        public String DeathJurisdictionID { get; set; }
+        //public uint? DeathYear {get; set;}
+        //public String DeathJurisdictionID { get; set; }
+
+        public uint? EventYear { get; set; }
+        public String JurisdictionID { get; set; }
         public String Message {get; set;}
     }
 }

@@ -16,7 +16,7 @@ namespace NVSSClient.Controllers
 {
     [Route("[controller]")]
     [ApiController]
-    public class RecordController : ControllerBase
+    public class VRDRRecordController : ControllerBase
     {
         private readonly AppDbContext _context;
         private static String cs = "Host=localhost;Username=postgres;Password=mysecretpassword;Database=postgres";
@@ -24,7 +24,7 @@ namespace NVSSClient.Controllers
         private static NpgsqlConnection con = new NpgsqlConnection(cs);
         private readonly IServiceScopeFactory _scopeFactory;
 
-        public RecordController(AppDbContext context, IServiceScopeFactory scopeFactory)
+        public VRDRRecordController(AppDbContext context, IServiceScopeFactory scopeFactory)
         {
             _context = context;
             _scopeFactory = scopeFactory;
@@ -51,7 +51,7 @@ namespace NVSSClient.Controllers
                     // Create a submission message for the record
                     DeathRecord record = new DeathRecord(text.ToString(), true);
                     var message = new DeathRecordSubmissionMessage(record);
-                    InsertMessageItem(message);
+                    InsertVRDRMessageItem(message);
                 }
             } catch (Exception e){
                 Console.WriteLine("Error Handling Record: {0}", e);
@@ -72,7 +72,7 @@ namespace NVSSClient.Controllers
                 // Create a submission message for the record
                 DeathRecord record = new DeathRecord(recordJson.ToString(), true);
                 var message = new DeathRecordSubmissionMessage(record);
-                InsertMessageItem(message);
+                InsertVRDRMessageItem(message);
             
             } catch (Exception e){
                 Console.WriteLine("Error Handling Record: {0}", e);
@@ -95,7 +95,7 @@ namespace NVSSClient.Controllers
                     // Create a submission message for the record
                     DeathRecord record = new DeathRecord(text.ToString(), true);
                     var message = new DeathRecordUpdateMessage(record);
-                    InsertMessageItem(message);
+                    InsertVRDRMessageItem(message);
                 }
             } catch (Exception e){
                 Console.WriteLine("Error Handling Record: {0}", e);
@@ -116,7 +116,7 @@ namespace NVSSClient.Controllers
                 // Create a submission message for the record
                 DeathRecord record = new DeathRecord(recordJson.ToString(), true);
                 var message = new DeathRecordUpdateMessage(record);
-                InsertMessageItem(message);
+                InsertVRDRMessageItem(message);
                 
             } catch (Exception e){
                 Console.WriteLine("Error Handling Record: {0}", e);
@@ -144,7 +144,7 @@ namespace NVSSClient.Controllers
                     
                     var message = new DeathRecordVoidMessage(record);
                     message.BlockCount = blockCount;
-                    InsertMessageItem(message);
+                    InsertVRDRMessageItem(message);
                 }
             } catch (Exception e){
                 Console.WriteLine("Error Handling Record: {0}", e);
@@ -169,7 +169,7 @@ namespace NVSSClient.Controllers
                 
                 var message = new DeathRecordVoidMessage(record);
                 message.BlockCount = blockCount;
-                InsertMessageItem(message);
+                InsertVRDRMessageItem(message);
             } catch (Exception e){
                 Console.WriteLine("Error Handling Record: {0}", e);
                 return BadRequest();
@@ -205,7 +205,7 @@ namespace NVSSClient.Controllers
                     message.AliasDecedentNameSuffix = suffixName;
                     message.AliasFatherSurname = fatherSurname;
                     message.AliasSocialSecurityNumber = ssn;
-                    InsertMessageItem(message);
+                    InsertVRDRMessageItem(message);
                 }
             } catch (Exception e){
                 Console.WriteLine("Error Handling Record: {0}", e);
@@ -241,7 +241,7 @@ namespace NVSSClient.Controllers
                 message.AliasFatherSurname = fatherSurname;
                 message.AliasSocialSecurityNumber = ssn;
 
-                InsertMessageItem(message);
+                InsertVRDRMessageItem(message);
             } catch (Exception e){
                 Console.WriteLine("Error Handling Record: {0}", e);
                 return BadRequest();
@@ -253,7 +253,7 @@ namespace NVSSClient.Controllers
         // GET: List of Records
         // Retrieves return all the unique business identifier sets and the status for the latest message that was sent with those business ids
         [HttpGet]
-        public ActionResult<List<MessageItem>> GetAllRecordStatus()
+        public ActionResult<List<MessageItem>> GetAllVRDRRecordStatus()
         {
             try 
             {            
@@ -299,7 +299,7 @@ namespace NVSSClient.Controllers
         // jurisditionId: the jurisdiction Id in the VRDR record
         // certNo: the 5 digit certificate number in the VRDR record
         [HttpGet("{deathYear}/{jurisdictionId}/{certNo}")]
-        public ActionResult<List<RecordResponse>> GetRecordStatus(uint deathYear, string jurisdictionId, string certNo)
+        public ActionResult<List<RecordResponse>> GetVRDRRecordStatus(uint deathYear, string jurisdictionId, string certNo)
         {
             try 
             {            
@@ -337,8 +337,8 @@ namespace NVSSClient.Controllers
 
         }
 
-        // InsertMessageItem inserts the given message into the MessageItem table to get picked up by the TimedHostedService
-        public void InsertMessageItem(BaseMessage message){
+        // InsertVRDRMessageItem inserts the given message into the MessageItem table to get picked up by the TimedHostedService
+        public void InsertVRDRMessageItem(BaseMessage message){
             try
             {
                 using (var scope = _scopeFactory.CreateScope()){
@@ -355,7 +355,6 @@ namespace NVSSClient.Controllers
                     item.JurisdictionID = message.JurisdictionId;
                     item.EventYear = message.DeathYear;
                     Console.WriteLine("Business IDs {0}, {1}, {2}", message.DeathYear, message.CertNo, message.JurisdictionId);
-
                     item.IJE_Version = "VRDR_STU3_0";
                     item.VitalRecordType = "VRDR";
 

@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Workspaces\nightingaleproject\vital-records-dotnet\projects\BFDR.Messaging\BFDR.Messaging.csproj" />
     <ProjectReference Include="..\..\Workspaces\nightingaleproject\vital-records-dotnet\projects\VitalRecord.Client\VitalRecord.Client.csproj" />
     <ProjectReference Include="..\..\Workspaces\nightingaleproject\vital-records-dotnet\projects\VitalRecord.Messaging\VitalRecord.Messaging.csproj" />
     <ProjectReference Include="..\..\Workspaces\nightingaleproject\vital-records-dotnet\projects\VRDR.Messaging\VRDR.Messaging.csproj" />

@@ -9,14 +9,14 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using NVSSClient.Models;
 using Npgsql;
-using VRDR;
+using BFDR;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace NVSSClient.Controllers
 {
     [Route("[controller]")]
     [ApiController]
-    public class RecordController : ControllerBase
+    public class BFDRRecordController : ControllerBase
     {
         private readonly AppDbContext _context;
         private static String cs = "Host=localhost;Username=postgres;Password=mysecretpassword;Database=postgres";
@@ -24,7 +24,7 @@ namespace NVSSClient.Controllers
         private static NpgsqlConnection con = new NpgsqlConnection(cs);
         private readonly IServiceScopeFactory _scopeFactory;
 
-        public RecordController(AppDbContext context, IServiceScopeFactory scopeFactory)
+        public BFDRRecordController(AppDbContext context, IServiceScopeFactory scopeFactory)
         {
             _context = context;
             _scopeFactory = scopeFactory;
@@ -49,9 +49,9 @@ namespace NVSSClient.Controllers
                 foreach (object text in textList)
                 {
                     // Create a submission message for the record
-                    DeathRecord record = new DeathRecord(text.ToString(), true);
-                    var message = new DeathRecordSubmissionMessage(record);
-                    InsertMessageItem(message);
+                    BirthRecord record = new BirthRecord(text.ToString(), true);
+                    var message = new BirthRecordSubmissionMessage(record);
+                    InsertBFDRMessageItem(message);
                 }
             } catch (Exception e){
                 Console.WriteLine("Error Handling Record: {0}", e);
@@ -70,9 +70,9 @@ namespace NVSSClient.Controllers
         {               
             try {
                 // Create a submission message for the record
-                DeathRecord record = new DeathRecord(recordJson.ToString(), true);
-                var message = new DeathRecordSubmissionMessage(record);
-                InsertMessageItem(message);
+                BirthRecord record = new BirthRecord(recordJson.ToString(), true);
+                var message = new BirthRecordSubmissionMessage(record);
+                InsertBFDRMessageItem(message);
             
             } catch (Exception e){
                 Console.WriteLine("Error Handling Record: {0}", e);
@@ -93,9 +93,9 @@ namespace NVSSClient.Controllers
                 foreach (object text in textList)
                 {
                     // Create a submission message for the record
-                    DeathRecord record = new DeathRecord(text.ToString(), true);
-                    var message = new DeathRecordUpdateMessage(record);
-                    InsertMessageItem(message);
+                    BirthRecord record = new BirthRecord(text.ToString(), true);
+                    var message = new BirthRecordSubmissionMessage(record);
+                    InsertBFDRMessageItem(message);
                 }
             } catch (Exception e){
                 Console.WriteLine("Error Handling Record: {0}", e);
@@ -114,9 +114,9 @@ namespace NVSSClient.Controllers
         {             
             try {
                 // Create a submission message for the record
-                DeathRecord record = new DeathRecord(recordJson.ToString(), true);
-                var message = new DeathRecordUpdateMessage(record);
-                InsertMessageItem(message);
+                BirthRecord record = new BirthRecord(recordJson.ToString(), true);
+                var message = new BirthRecordUpdateMessage(record);
+                InsertBFDRMessageItem(message);
                 
             } catch (Exception e){
                 Console.WriteLine("Error Handling Record: {0}", e);
@@ -140,11 +140,11 @@ namespace NVSSClient.Controllers
                     var dict = JsonConvert.DeserializeObject<Dictionary<string, object>>(text.ToString());
                     object recordJson = dict["record"];
                     uint? blockCount = UInt32.Parse(dict["block_count"].ToString());
-                    DeathRecord record = new DeathRecord(recordJson.ToString(), true);
+                    BirthRecord record = new BirthRecord(recordJson.ToString(), true);
                     
-                    var message = new DeathRecordVoidMessage(record);
+                    var message = new BirthRecordVoidMessage(record);
                     message.BlockCount = blockCount;
-                    InsertMessageItem(message);
+                    InsertBFDRMessageItem(message);
                 }
             } catch (Exception e){
                 Console.WriteLine("Error Handling Record: {0}", e);
@@ -165,11 +165,11 @@ namespace NVSSClient.Controllers
                 // Create a submission message for the record
                 object recordJson = json["record"];
                 uint? blockCount = UInt32.Parse(json["block_count"].ToString());
-                DeathRecord record = new DeathRecord(recordJson.ToString(), true);
+                BirthRecord record = new BirthRecord(recordJson.ToString(), true);
                 
-                var message = new DeathRecordVoidMessage(record);
+                var message = new BirthRecordVoidMessage(record);
                 message.BlockCount = blockCount;
-                InsertMessageItem(message);
+                InsertBFDRMessageItem(message);
             } catch (Exception e){
                 Console.WriteLine("Error Handling Record: {0}", e);
                 return BadRequest();
@@ -178,82 +178,12 @@ namespace NVSSClient.Controllers
             return NoContent();
         }
 
-        // POST: Alias Records
-        // Wraps each record in a FHIR Alias message and queues the message to be sent to the NVSS API Server
-        [HttpPost]
-        [Route("aliases")]
-        public IActionResult AliasRecordHandler([FromBody] List<object> textList)
-        {               
-            try {
-                foreach (object text in textList)
-                {
-                    // Create a submission message for the record
-                    var dict = JsonConvert.DeserializeObject<Dictionary<string, object>>(text.ToString());
-                    object recordJson = dict["record"];
-                    DeathRecord record = new DeathRecord(recordJson.ToString(), true);
-                    string firstName = dict["alias_decedent_first_name"].ToString();
-                    string lastName = dict["alias_decedent_last_name"].ToString();
-                    string middleName = dict["alias_decedent_middle_name"].ToString();
-                    string suffixName = dict["alias_decedent_name_suffix"].ToString();
-                    string fatherSurname = dict["alias_father_surname"].ToString();
-                    string ssn = dict["alias_social_security_number"].ToString();
 
-                    var message = new DeathRecordAliasMessage(record);
-                    message.AliasDecedentFirstName = firstName;
-                    message.AliasDecedentLastName = lastName;
-                    message.AliasDecedentMiddleName = middleName;
-                    message.AliasDecedentNameSuffix = suffixName;
-                    message.AliasFatherSurname = fatherSurname;
-                    message.AliasSocialSecurityNumber = ssn;
-                    InsertMessageItem(message);
-                }
-            } catch (Exception e){
-                Console.WriteLine("Error Handling Record: {0}", e);
-                return BadRequest();
-            }
-
-            // return HTTP status code 204 (No Content)
-            return NoContent();
-        }
-
-        // POST: Alias Records
-        // Wraps the record in a FHIR Alias message, sets the alias values and queues the message to be sent to the NVSS API Server
-        [HttpPost]
-        [Route("alias")]
-        public IActionResult AliasRecordHandler([FromBody] Dictionary<string, object> data)
-        {               
-            try {
-                // Create a submission message for the record
-                object recordJson = data["record"];
-                DeathRecord record = new DeathRecord(recordJson.ToString(), true);
-                string firstName = data["alias_decedent_first_name"].ToString();
-                string lastName = data["alias_decedent_last_name"].ToString();
-                string middleName = data["alias_decedent_middle_name"].ToString();
-                string suffixName = data["alias_decedent_name_suffix"].ToString();
-                string fatherSurname = data["alias_father_surname"].ToString();
-                string ssn = data["alias_social_security_number"].ToString();
-
-                var message = new DeathRecordAliasMessage(record);
-                message.AliasDecedentFirstName = firstName;
-                message.AliasDecedentLastName = lastName;
-                message.AliasDecedentMiddleName = middleName;
-                message.AliasDecedentNameSuffix = suffixName;
-                message.AliasFatherSurname = fatherSurname;
-                message.AliasSocialSecurityNumber = ssn;
-
-                InsertMessageItem(message);
-            } catch (Exception e){
-                Console.WriteLine("Error Handling Record: {0}", e);
-                return BadRequest();
-            }
-            // return HTTP status code 204 (No Content)
-            return NoContent();
-        }
 
         // GET: List of Records
         // Retrieves return all the unique business identifier sets and the status for the latest message that was sent with those business ids
         [HttpGet]
-        public ActionResult<List<MessageItem>> GetAllRecordStatus()
+        public ActionResult<List<MessageItem>> GetAllBFDRRecordStatus()
         {
             try 
             {            
@@ -295,11 +225,11 @@ namespace NVSSClient.Controllers
 
         // GET: Record Status
         // Retrieves all the messages sent with the specified business ids
-        // deathYear: the year of death in the VRDR record
-        // jurisditionId: the jurisdiction Id in the VRDR record
-        // certNo: the 5 digit certificate number in the VRDR record
-        [HttpGet("{deathYear}/{jurisdictionId}/{certNo}")]
-        public ActionResult<List<RecordResponse>> GetRecordStatus(uint deathYear, string jurisdictionId, string certNo)
+        // birthYear: the year of birth in the BFDR record
+        // jurisditionId: the jurisdiction Id in the BFDR record
+        // certNo: the 5 digit certificate number in the BFDR record
+        [HttpGet("{birthYear}/{jurisdictionId}/{certNo}")]
+        public ActionResult<List<RecordResponse>> GetBFDRRecordStatus(uint eventYear, string jurisdictionId, string certNo)
         {
             try 
             {            
@@ -307,7 +237,7 @@ namespace NVSSClient.Controllers
                 using (var scope = _scopeFactory.CreateScope()){
                     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                     uint certNoInt = UInt32.Parse(certNo);
-                    List<MessageItem> messages = context.MessageItems.Where(s => s.CertificateNumber == certNoInt && s.EventYear == deathYear && s.JurisdictionID == jurisdictionId).OrderByDescending(s => s.CreatedDate).ToList();
+                    List<MessageItem> messages = context.MessageItems.Where(s => s.CertificateNumber == certNoInt && s.EventYear == eventYear && s.JurisdictionID == jurisdictionId).OrderByDescending(s => s.CreatedDate).ToList();
                     if (messages == null) {
                         Console.WriteLine("Error, no messages were found for the provided identifiers.");
                         return NotFound("Record not found");
@@ -337,8 +267,8 @@ namespace NVSSClient.Controllers
 
         }
 
-        // InsertMessageItem inserts the given message into the MessageItem table to get picked up by the TimedHostedService
-        public void InsertMessageItem(BaseMessage message){
+        // InsertBFDRMessageItem inserts the given message into the MessageItem table to get picked up by the TimedHostedService
+        public void InsertBFDRMessageItem(BFDRBaseMessage message){
             try
             {
                 using (var scope = _scopeFactory.CreateScope()){
@@ -353,11 +283,11 @@ namespace NVSSClient.Controllers
                     item.StateAuxiliaryIdentifier = message.StateAuxiliaryId;
                     item.CertificateNumber = message.CertNo;
                     item.JurisdictionID = message.JurisdictionId;
-                    item.EventYear = message.DeathYear;
-                    Console.WriteLine("Business IDs {0}, {1}, {2}", message.DeathYear, message.CertNo, message.JurisdictionId);
-
-                    item.IJE_Version = "VRDR_STU3_0";
-                    item.VitalRecordType = "VRDR";
+                    item.EventYear = message.EventYear;
+                    Console.WriteLine("Business IDs {0}, {1}, {2}", message.EventYear, message.CertNo, message.JurisdictionId);
+//TODO for different types
+                    item.IJE_Version = "BFDR_STU3_0";
+                    item.VitalRecordType = "BFDR-BIRTH";
 
                     // Status info
                     item.Status = Models.MessageStatus.Pending.ToString();

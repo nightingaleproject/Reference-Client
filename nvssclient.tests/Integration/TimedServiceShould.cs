@@ -74,8 +74,8 @@ namespace NVSSClient.tests
                 // Business Identifiers
                 item.StateAuxiliaryIdentifier = message.StateAuxiliaryId;
                 item.CertificateNumber = message.CertNo;
-                item.DeathJurisdictionID = message.JurisdictionId;
-                item.DeathYear = message.DeathYear;
+                item.JurisdictionID = message.JurisdictionId;
+                item.EventYear = message.DeathYear;
                 
                 // Status info
                 item.Status = Models.MessageStatus.Acknowledged.ToString();
@@ -98,7 +98,7 @@ namespace NVSSClient.tests
                 context.Database.EnsureCreated();
 
                 // TODO remove the coding and update responses
-                MessageItem message = context.MessageItems.Where(s => s.DeathJurisdictionID == "FL" && s.CertificateNumber == 5 && s.DeathYear == 2021).FirstOrDefault();
+                MessageItem message = context.MessageItems.Where(s => s.JurisdictionID == "FL" && s.CertificateNumber == 5 && s.EventYear == 2021).FirstOrDefault();
                 context.Remove(message);
 
                 context.SaveChanges();
