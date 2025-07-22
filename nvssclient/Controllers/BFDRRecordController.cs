@@ -285,7 +285,7 @@ namespace NVSSClient.Controllers
                     item.JurisdictionID = message.JurisdictionId;
                     item.EventYear = message.EventYear;
                     Console.WriteLine("Business IDs {0}, {1}, {2}", message.EventYear, message.CertNo, message.JurisdictionId);
-//TODO for different types
+
                     item.IJE_Version = "BFDR_STU3_0";
                     item.VitalRecordType = "BFDR-BIRTH";
 
