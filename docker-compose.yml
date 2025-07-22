@@ -17,5 +17,5 @@ services:
       - sapassword.env
     command: >
       bash -c "/opt/mssql/bin/sqlservr
-      && /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'yourStrong(!)Password1' -q \"CREATE DATABASE nvssmessaging;\""
+      && /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'yourStrong$Password' -q \"CREATE DATABASE nvssmessaging;\""
     
