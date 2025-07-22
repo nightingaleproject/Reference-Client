@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NVSSClient.Controllers;
 using NVSSClient.Models;
+using StackExchange.Profiling.Internal;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -121,25 +122,37 @@ namespace NVSSClient.Services
             var vrdrItems = items.Where(item => item.VitalRecordType == "VRDR").ToList();
             var brdrBirthItems = items.Where(item => item.VitalRecordType == "BFDR-BIRTH").ToList();
             var brdrFatalItems = items.Where(item => item.VitalRecordType == "BFDR-FETALDEATH").ToList();
-            SubmitMessages(vrdrItems, CreatePathFromMessageFields(vrdrItems));
-            SubmitMessages(brdrBirthItems, CreatePathFromMessageFields(brdrBirthItems));
-            SubmitMessages(brdrFatalItems, CreatePathFromMessageFields(brdrFatalItems));
+            SubmitMessages(vrdrItems, CreatePathFromMessageFields(vrdrItems[0]));
+            SubmitMessages(brdrBirthItems, CreatePathFromMessageFields(brdrBirthItems[0]));
+            SubmitMessages(brdrFatalItems, CreatePathFromMessageFields(brdrFatalItems[0]));
             //scope (and context) gets destroyed here
         }
 
-        private string CreatePathFromMessageFields(List<MessageItem> items)
+        private string CreatePathFromMessageFields(MessageItem item)
         {
             string optionalPath = "VRDR/VRDR_STU3_0";
-            if (!items.IsNullOrEmpty())
+            if (item !=null && !item.VitalRecordType.IsNullOrWhiteSpace() && !item.IJE_Version.IsNullOrWhiteSpace())
             {
-                optionalPath = items[0].VitalRecordType.ToString() + "/" + items[0].IJE_Version;
+                optionalPath = item.VitalRecordType.ToString() + "/" + item.IJE_Version;
             }
             return optionalPath;
         }
 
+        private string CreatePathFromResponseFields(ResponseItem item)
+        {
+            string optionalPath = "VRDR/VRDR_STU3_0";
+            if (item != null && !item.VitalRecordType.IsNullOrWhiteSpace() && !item.IJE_Version.IsNullOrWhiteSpace())
+            {
+                optionalPath = item.VitalRecordType.ToString() + "/" + item.IJE_Version;
+            }
+            return optionalPath;
+        }
+
+
         // SubmitMessages   Sends them to the NVSS FHIR API
         public async void SubmitMessages(List<MessageItem> items, string path)
         {
+            if (items.Count == 0) return;
             // scope the db context, its not meant to last the whole life cycle
             // and we need to deconflict for other db calls
             using (var scope = _scopeFactory.CreateScope())
@@ -201,15 +214,16 @@ namespace NVSSClient.Services
             var vrdrItems = items.Where(item => item.VitalRecordType == "VRDR").ToList();
             var brdrBirthItems = items.Where(item => item.VitalRecordType == "BFDR-BIRTH").ToList();
             var brdrFatalItems = items.Where(item => item.VitalRecordType == "BFDR-FETALDEATH").ToList();
-            ResendMessages(vrdrItems, CreatePathFromMessageFields(vrdrItems));
-            ResendMessages(brdrBirthItems, CreatePathFromMessageFields(brdrBirthItems));
-            ResendMessages(brdrFatalItems, CreatePathFromMessageFields(brdrFatalItems));
+            ResendMessages(vrdrItems, CreatePathFromMessageFields(vrdrItems[0]));
+            ResendMessages(brdrBirthItems, CreatePathFromMessageFields(brdrBirthItems[0]));
+            ResendMessages(brdrFatalItems, CreatePathFromMessageFields(brdrFatalItems[0]));
         }
 
         // ResendMessages supports reliable delivery of messages, it finds Messages in the DB that have not been acknowledged 
         // and have exceeded their expiration date. It resends the selected Messages to the NVSS FHIR API
         public async void ResendMessages(List<MessageItem> items, string path)
         {
+            if (items.Count == 0) return;
             // scope the db context, its not meant to last the whole life cycle
             // and we need to deconflict for other db calls
             using (var scope = _scopeFactory.CreateScope())
@@ -295,14 +309,12 @@ namespace NVSSClient.Services
 
                     // BaseMessage msg = BaseMessage.Parse<BaseMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                     string refID = null;
-                    string vitalType = null;
                     switch (msg.MessageType)
                     {
                         //VRDR MESSAGES (13)
                         case AcknowledgementMessage.MESSAGE_TYPE:
                             AcknowledgementMessage message = BaseMessage.Parse<AcknowledgementMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = message.AckedMessageId; // Added refID assignment
-                            vitalType = "VRDR";
                             _logger.LogInformation($"*** Received ack message: {message.MessageId} for {message.AckedMessageId}");
                             ProcessAckMessage(message);
                             break;
@@ -310,17 +322,15 @@ namespace NVSSClient.Services
                         case CauseOfDeathCodingMessage.MESSAGE_TYPE:
                             CauseOfDeathCodingMessage codCodeMsg = BaseMessage.Parse<CauseOfDeathCodingMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = codCodeMsg.CodedMessageId; // Added refID assignment
-                            vitalType = "VRDR";
                             _logger.LogInformation($"*** Received coding message: {codCodeMsg.MessageId}");
-                            ProcessResponseMessage(codCodeMsg, refID, vitalType);
+                            ProcessResponseMessage(codCodeMsg, refID);
                             break;
 
                         case DemographicsCodingMessage.MESSAGE_TYPE:
                             DemographicsCodingMessage demCodeMsg = BaseMessage.Parse<DemographicsCodingMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = demCodeMsg.CodedMessageId; // Added refID assignment
-                            vitalType = "VRDR";
                             _logger.LogInformation($"*** Received demographics coding message: {demCodeMsg.MessageId}");
-                            ProcessResponseMessage(demCodeMsg, refID, vitalType);
+                            ProcessResponseMessage(demCodeMsg, refID);
                             break;
 
                         case CauseOfDeathCodingUpdateMessage.MESSAGE_TYPE:
@@ -328,79 +338,70 @@ namespace NVSSClient.Services
                             refID = codUpdateMsg.CodedMessageId; // Added refID assignment
                             vitalType = "VRDR";
                             _logger.LogInformation($"*** Received coding update message: {codUpdateMsg.MessageId}");
-                            ProcessResponseMessage(codUpdateMsg, refID, vitalType);
+                            ProcessResponseMessage(codUpdateMsg, refID);
                             break;
 
                         case DemographicsCodingUpdateMessage.MESSAGE_TYPE:
                             DemographicsCodingUpdateMessage demUpdateMsg = BaseMessage.Parse<DemographicsCodingUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = demUpdateMsg.CodedMessageId; // Added refID assignment
-                            vitalType = "VRDR";
                             _logger.LogInformation($"*** Received demographics coding update message: {demUpdateMsg.MessageId}");
-                            ProcessResponseMessage(demUpdateMsg, refID, vitalType);
+                            ProcessResponseMessage(demUpdateMsg, refID);
                             break;
 
                         case ExtractionErrorMessage.MESSAGE_TYPE:
                             ExtractionErrorMessage errMsg = BaseMessage.Parse<ExtractionErrorMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = errMsg.FailedMessageId; // Added refID assignment
-                            vitalType = "VRDR";
                             _logger.LogInformation($"*** Received extraction error: {errMsg.MessageId}");
-                            ProcessResponseMessage(errMsg, refID, vitalType);
+                            ProcessResponseMessage(errMsg, refID);
                             break;
 
                         case StatusMessage.MESSAGE_TYPE:
                             StatusMessage statusMsg = BaseMessage.Parse<StatusMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = statusMsg.StatusedMessageId; // Added refID assignment
-                            vitalType = "VRDR";
                             _logger.LogInformation($"*** Received status error: {statusMsg.MessageId}");
-                            ProcessResponseMessage(statusMsg, refID, vitalType);
+                            ProcessResponseMessage(statusMsg, refID);
                             break;
 
                         case IndustryOccupationCodingMessage.MESSAGE_TYPE:
                             IndustryOccupationCodingMessage indOccMsg = BaseMessage.Parse<IndustryOccupationCodingMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = indOccMsg.CodedMessageId; // Added refID assignment
-                            vitalType = "VRDR";
                             _logger.LogInformation($"*** Received industry occupation coding message: {indOccMsg.MessageId}");
-                            ProcessResponseMessage(indOccMsg, refID, vitalType);
+                            ProcessResponseMessage(indOccMsg, refID);
                             break;
 
                         case IndustryOccupationCodingUpdateMessage.MESSAGE_TYPE:
                             IndustryOccupationCodingUpdateMessage indOccUpdateMsg = BaseMessage.Parse<IndustryOccupationCodingUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = indOccUpdateMsg.CodedMessageId; // Added refID assignment
-                            vitalType = "VRDR";
                             _logger.LogInformation($"*** Received industry occupation coding update message: {indOccUpdateMsg.MessageId}");
-                            ProcessResponseMessage(indOccUpdateMsg, refID, vitalType);
+                            ProcessResponseMessage(indOccUpdateMsg, refID);
                             break;
 
                         case DeathRecordVoidMessage.MESSAGE_TYPE:
                             DeathRecordVoidMessage deathRecordVoidMsg = BaseMessage.Parse<DeathRecordVoidMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = deathRecordVoidMsg.MessageId; // Added refID assignment
-                            vitalType = "VRDR";
                             _logger.LogInformation($"*** Received death record void message: {deathRecordVoidMsg.MessageId}");
-                            ProcessResponseMessage(deathRecordVoidMsg, refID, vitalType);
+                            ProcessResponseMessage(deathRecordVoidMsg, refID);
                             break;
 
                         case DeathRecordSubmissionMessage.MESSAGE_TYPE:
                             DeathRecordSubmissionMessage deathRecordSubmissionMsg = BaseMessage.Parse<DeathRecordSubmissionMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = deathRecordSubmissionMsg.MessageId; // Added refID assignment
-                            vitalType = "VRDR";
                             _logger.LogInformation($"*** Received death record submission message: {deathRecordSubmissionMsg.MessageId}");
-                            ProcessResponseMessage(deathRecordSubmissionMsg, refID, vitalType);
+                            ProcessResponseMessage(deathRecordSubmissionMsg, refID);
                             break;
 
                         case DeathRecordUpdateMessage.MESSAGE_TYPE:
                             DeathRecordUpdateMessage deathRecordUpdateMsg = BaseMessage.Parse<DeathRecordUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = deathRecordUpdateMsg.MessageId; // Added refID assignment
-                            vitalType = "VRDR";
                             _logger.LogInformation($"*** Received death record update message: {deathRecordUpdateMsg.MessageId}");
-                            ProcessResponseMessage(deathRecordUpdateMsg, refID, vitalType);
+                            ProcessResponseMessage(deathRecordUpdateMsg, refID);
                             break;
 
                         case DeathRecordAliasMessage.MESSAGE_TYPE:
                             DeathRecordAliasMessage deathRecordAliasMsg = BaseMessage.Parse<DeathRecordAliasMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = deathRecordAliasMsg.MessageId; // Added refID assignment
-                            vitalType = "VRDR";
                             _logger.LogInformation($"*** Received death record alias message: {deathRecordAliasMsg.MessageId}");
-                            ProcessResponseMessage(deathRecordAliasMsg, refID, vitalType);
+                            ProcessResponseMessage(deathRecordAliasMsg, refID);
                             break;
 
 
@@ -408,139 +409,121 @@ namespace NVSSClient.Services
                         case BirthRecordSubmissionMessage.MESSAGE_TYPE:
                             BirthRecordSubmissionMessage birthRecordSubmissionMessage = BFDRBaseMessage.Parse<BirthRecordSubmissionMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = birthRecordSubmissionMessage.MessageId; // Added refID assignment
-                            vitalType = "BFDR-BIRTH";
                             _logger.LogInformation($"*** Received birth record update message: {birthRecordSubmissionMessage.MessageId}");
-                            ProcessResponseMessage(birthRecordSubmissionMessage, refID, vitalType);
+                            ProcessResponseMessage(birthRecordSubmissionMessage, refID);
                             break;
                         case BirthRecordStatusMessage.MESSAGE_TYPE:
                             BirthRecordStatusMessage birthRecordStatusMessage = BFDRBaseMessage.Parse<BirthRecordStatusMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = birthRecordStatusMessage.MessageId; // Added refID assignment
-                            vitalType = "BFDR-BIRTH";
                             _logger.LogInformation($"*** Received birth record update message: {birthRecordStatusMessage.MessageId}");
-                            ProcessResponseMessage(birthRecordStatusMessage, refID, vitalType);
+                            ProcessResponseMessage(birthRecordStatusMessage, refID);
                             break;
                         case BirthRecordUpdateMessage.MESSAGE_TYPE:
                             BirthRecordUpdateMessage birthRecordUpdateMessage = BFDRBaseMessage.Parse<BirthRecordUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = birthRecordUpdateMessage.MessageId; // Added refID assignment
-                            vitalType = "BFDR-BIRTH";
-                            _logger.LogInformation($"*** Received birth record update message: {birthRecordUpdateMessage.MessageId}");
-                            ProcessResponseMessage(birthRecordUpdateMessage, refID, vitalType);
+                           _logger.LogInformation($"*** Received birth record update message: {birthRecordUpdateMessage.MessageId}");
+                            ProcessResponseMessage(birthRecordUpdateMessage, refID);
                             break;
 
                         case BirthRecordVoidMessage.MESSAGE_TYPE:
                             BirthRecordVoidMessage birthRecordVoidMessage = BFDRBaseMessage.Parse<BirthRecordVoidMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = birthRecordVoidMessage.MessageId; // Added refID assignment
-                            vitalType = "BFDR-BIRTH";
                             _logger.LogInformation($"*** Received birth record update message: {birthRecordVoidMessage.MessageId}");
-                            ProcessResponseMessage(birthRecordVoidMessage, refID, vitalType);
+                            ProcessResponseMessage(birthRecordVoidMessage, refID);
                             break;
 
                         case BirthRecordParentalDemographicsCodingMessage.MESSAGE_TYPE:
                             BirthRecordParentalDemographicsCodingMessage birthRecordParentalDemographicsCodingMessage =
                                 BFDRBaseMessage.Parse<BirthRecordParentalDemographicsCodingMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = birthRecordParentalDemographicsCodingMessage.MessageId; // Added refID assignment
-                            vitalType = "BFDR-BIRTH";
                             _logger.LogInformation($"*** Received birth record update message: {birthRecordParentalDemographicsCodingMessage.MessageId}");
-                            ProcessResponseMessage(birthRecordParentalDemographicsCodingMessage, refID, vitalType);
+                            ProcessResponseMessage(birthRecordParentalDemographicsCodingMessage, refID);
                             break;
                         case BirthRecordParentalDemographicsCodingUpdateMessage.MESSAGE_TYPE:
                             BirthRecordParentalDemographicsCodingUpdateMessage birthRecordParentalDemographicsCodingUpdateMessage = BFDRBaseMessage.Parse<BirthRecordParentalDemographicsCodingUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = birthRecordParentalDemographicsCodingUpdateMessage.MessageId; // Added refID assignment
-                            vitalType = "BFDR-BIRTH";
                             _logger.LogInformation($"*** Received birth record parental demographics coding update message: {birthRecordParentalDemographicsCodingUpdateMessage.MessageId}");
-                            ProcessResponseMessage(birthRecordParentalDemographicsCodingUpdateMessage, refID, vitalType);
+                            ProcessResponseMessage(birthRecordParentalDemographicsCodingUpdateMessage, refID);
                             break;
                         case BirthRecordErrorMessage.MESSAGE_TYPE:
                             BirthRecordErrorMessage birthRecordErrorMessage = BFDRBaseMessage.Parse<BirthRecordErrorMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = birthRecordErrorMessage.MessageId; // Added refID assignment
-                            vitalType = "BFDR-BIRTH";
                             _logger.LogInformation($"*** Received birth record update message: {birthRecordErrorMessage.MessageId}");
-                            ProcessResponseMessage(birthRecordErrorMessage, refID, vitalType);
+                            ProcessResponseMessage(birthRecordErrorMessage, refID);
                             break;
                         case BirthRecordAcknowledgementMessage.MESSAGE_TYPE:
                             BirthRecordAcknowledgementMessage birthRecordAcknowledgementMessage = BFDRBaseMessage.Parse<BirthRecordAcknowledgementMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = birthRecordAcknowledgementMessage.MessageId; // Added refID assignment
-                            vitalType = "BFDR-BIRTH";
                             _logger.LogInformation($"*** Received birth record update message: {birthRecordAcknowledgementMessage.MessageId}");
-                            ProcessResponseMessage(birthRecordAcknowledgementMessage, refID, vitalType);
+                            ProcessResponseMessage(birthRecordAcknowledgementMessage, refID);
                             break;
 
                         //BFDR-FETALDEATH messages (10)
                         case FetalDeathRecordSubmissionMessage.MESSAGE_TYPE:
                             FetalDeathRecordSubmissionMessage fetalDeathRecordSubmissionMessage = BFDRBaseMessage.Parse<FetalDeathRecordSubmissionMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = fetalDeathRecordSubmissionMessage.MessageId; // Added refID assignment
-                            vitalType = "BFDR-FETALDEATH";
                             _logger.LogInformation($"*** Received fetal death record submission message: {fetalDeathRecordSubmissionMessage.MessageId}");
-                            ProcessResponseMessage(fetalDeathRecordSubmissionMessage, refID, vitalType);
+                            ProcessResponseMessage(fetalDeathRecordSubmissionMessage, refID);
                             break;
 
                         case FetalDeathRecordUpdateMessage.MESSAGE_TYPE:
                             FetalDeathRecordUpdateMessage fetalDeathRecordUpdateMessage = BFDRBaseMessage.Parse<FetalDeathRecordUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = fetalDeathRecordUpdateMessage.MessageId; // Added refID assignment
-                            vitalType = "BFDR-FETALDEATH";
                             _logger.LogInformation($"*** Received fetal death record update message: {fetalDeathRecordUpdateMessage.MessageId}");
-                            ProcessResponseMessage(fetalDeathRecordUpdateMessage, refID, vitalType);
+                            ProcessResponseMessage(fetalDeathRecordUpdateMessage, refID);
                             break;
 
                         case CodedCauseOfFetalDeathMessage.MESSAGE_TYPE:
                             CodedCauseOfFetalDeathMessage codedCauseOfFetalDeathMessage = BFDRBaseMessage.Parse<CodedCauseOfFetalDeathMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = codedCauseOfFetalDeathMessage.MessageId; // Added refID assignment
-                            vitalType = "BFDR-FETALDEATH";
                             _logger.LogInformation($"*** Received coded cause of fetal death update message: {codedCauseOfFetalDeathMessage.MessageId}");
-                            ProcessResponseMessage(codedCauseOfFetalDeathMessage, refID, vitalType);
+                            ProcessResponseMessage(codedCauseOfFetalDeathMessage, refID);
                             break;
                         case CodedCauseOfFetalDeathUpdateMessage.MESSAGE_TYPE:
                             CodedCauseOfFetalDeathUpdateMessage codedCauseOfFetalDeathUpdateMessage = BFDRBaseMessage.Parse<CodedCauseOfFetalDeathUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = codedCauseOfFetalDeathUpdateMessage.MessageId; // Added refID assignment
-                            vitalType = "BFDR-FETALDEATH";
                             _logger.LogInformation($"*** Received coded cause of fetal death update message: {codedCauseOfFetalDeathUpdateMessage.MessageId}");
-                            ProcessResponseMessage(codedCauseOfFetalDeathUpdateMessage, refID, vitalType);
+                            ProcessResponseMessage(codedCauseOfFetalDeathUpdateMessage, refID);
                             break;
 
                         case FetalDeathRecordVoidMessage.MESSAGE_TYPE:
                             FetalDeathRecordVoidMessage fetalDeathRecordVoidMessage = BFDRBaseMessage.Parse<FetalDeathRecordVoidMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = fetalDeathRecordVoidMessage.MessageId; // Added refID assignment
-                            vitalType = "BFDR-FETALDEATH";
                             _logger.LogInformation($"*** Received fetal death record void message: {fetalDeathRecordVoidMessage.MessageId}");
-                            ProcessResponseMessage(fetalDeathRecordVoidMessage, refID, vitalType);
+                            ProcessResponseMessage(fetalDeathRecordVoidMessage, refID);
                             break;
 
                         case FetalDeathRecordStatusMessage.MESSAGE_TYPE:
                             FetalDeathRecordStatusMessage fetalDeathRecordStatusMessage = BFDRBaseMessage.Parse<FetalDeathRecordStatusMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = fetalDeathRecordStatusMessage.MessageId; // Added refID assignment
-                            vitalType = "BFDR-FETALDEATH";
                             _logger.LogInformation($"*** Received fetal death record status message: {fetalDeathRecordStatusMessage.MessageId}");
-                            ProcessResponseMessage(fetalDeathRecordStatusMessage, refID, vitalType);
+                            ProcessResponseMessage(fetalDeathRecordStatusMessage, refID);
                             break;
 
                         case FetalDeathRecordParentalDemographicsCodingMessage.MESSAGE_TYPE:
                             FetalDeathRecordParentalDemographicsCodingMessage fetalDeathRecordParentalDemographicsCodingMessage = BFDRBaseMessage.Parse<FetalDeathRecordParentalDemographicsCodingMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = fetalDeathRecordParentalDemographicsCodingMessage.MessageId; // Added refID assignment
-                            vitalType = "BFDR-FETALDEATH";
                             _logger.LogInformation($"*** Received fetal death record parental demographics coding message: {fetalDeathRecordParentalDemographicsCodingMessage.MessageId}");
-                            ProcessResponseMessage(fetalDeathRecordParentalDemographicsCodingMessage, refID, vitalType);
+                            ProcessResponseMessage(fetalDeathRecordParentalDemographicsCodingMessage, refID);
                             break;
 
                         case FetalDeathRecordParentalDemographicsCodingUpdateMessage.MESSAGE_TYPE:
                             FetalDeathRecordParentalDemographicsCodingUpdateMessage fetalDeathRecordParentalDemographicsCodingUpdateMessage = BFDRBaseMessage.Parse<FetalDeathRecordParentalDemographicsCodingUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = fetalDeathRecordParentalDemographicsCodingUpdateMessage.MessageId; // Added refID assignment
-                            vitalType = "BFDR-FETALDEATH";
                             _logger.LogInformation($"*** Received fetal death record parental demographics coding update message: {fetalDeathRecordParentalDemographicsCodingUpdateMessage.MessageId}");
-                            ProcessResponseMessage(fetalDeathRecordParentalDemographicsCodingUpdateMessage, refID, vitalType);
+                            ProcessResponseMessage(fetalDeathRecordParentalDemographicsCodingUpdateMessage, refID);
                             break;
 
                         case FetalDeathRecordErrorMessage.MESSAGE_TYPE:
                             FetalDeathRecordErrorMessage fetalDeathRecordErrorMessage = BFDRBaseMessage.Parse<FetalDeathRecordErrorMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = fetalDeathRecordErrorMessage.MessageId; // Added refID assignment
-                            vitalType = "BFDR-FETALDEATH";
                             _logger.LogInformation($"*** Received fetal death record error message: {fetalDeathRecordErrorMessage.MessageId}");
-                            ProcessResponseMessage(fetalDeathRecordErrorMessage, refID, vitalType);
+                            ProcessResponseMessage(fetalDeathRecordErrorMessage, refID);
                             break;
 
                         case FetalDeathRecordAcknowledgementMessage.MESSAGE_TYPE:
                             FetalDeathRecordAcknowledgementMessage fetalDeathRecordAcknowledgementMessage = BFDRBaseMessage.Parse<FetalDeathRecordAcknowledgementMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = fetalDeathRecordAcknowledgementMessage.MessageId; // Added refID assignment
-                            vitalType = "BFDR-FETALDEATH";
                             _logger.LogInformation($"*** Received fetal death record acknowledgement message: {fetalDeathRecordAcknowledgementMessage.MessageId}");
                             ProcessAckMessage(fetalDeathRecordAcknowledgementMessage);
                             break;
@@ -649,7 +632,7 @@ namespace NVSSClient.Services
         }
 
         // ProcessResponseMessage processes codings, coding updates, and extraction errors
-        public async void ProcessResponseMessage(CommonMessage message, String refID, String vitalType)
+        public async void ProcessResponseMessage(CommonMessage message, String refID)
         {
             try
             {
@@ -659,25 +642,26 @@ namespace NVSSClient.Services
 
                     // check if this response message is a duplicate
                     // if it is a duplicate resend the ack
-                    int count = context.ResponseItems.Where(m => m.Uid == message.MessageId).Count();
+                    var responseItems = context.ResponseItems.Where(m => m.Uid == message.MessageId).ToList();
+                    int count = responseItems.Count;
                     if (count > 0)
                     {
                         _logger.LogInformation($"*** Received duplicate message with Id: {message.MessageId}, ignore and resend ack");
 
                         CommonMessage ackMessage = null;
-                        String path = string.Empty;
-                        if(vitalType == "BFDR-BIRTH")
+                        String path = CreatePathFromResponseFields(responseItems[0]);
+                        if (responseItems[0].VitalRecordType == "BFDR-BIRTH")
                         {
                             ackMessage = new BirthRecordAcknowledgementMessage(message);
-                            path = vitalType + "/" + "BFDR_STU3_0";
-                        } else if (vitalType == "BFDR-FETALDEATH")
+                           // path = vitalType + "/" + "BFDR_STU3_0";
+                        } else if (responseItems[0].VitalRecordType == "BFDR-FETALDEATH")
                         {
                             ackMessage = new FetalDeathRecordAcknowledgementMessage(message);
-                            path = vitalType + "/" + "BFDR_STU3_0";
+                           // path = vitalType + "/" + "BFDR_STU3_0";
                         } else
                         {
                             ackMessage = new AcknowledgementMessage(message);
-                            path = "VRDR" + "/" + "VRDR_STU3_0";
+                           // path = "VRDR" + "/" + "VRDR_STU3_0";
                         }
 
                         HttpResponseMessage rsp = 
@@ -720,6 +704,8 @@ namespace NVSSClient.Services
                     response.JurisdictionID = message.JurisdictionId;
                     response.EventYear = message.EventYear;//message.DeathYear;
                     response.Message = message.ToJson().ToString();
+                    response.VitalRecordType = original.VitalRecordType;
+                    response.IJE_Version = original.IJE_Version;
                     context.ResponseItems.Add(response);
 
                     context.SaveChanges();
@@ -730,7 +716,7 @@ namespace NVSSClient.Services
                             message.MessageType != FetalDeathRecordStatusMessage.MESSAGE_TYPE && message.MessageType != BirthRecordStatusMessage.MESSAGE_TYPE)
                     {
                         CommonMessage ackMessage = null;
-                        string path = original.VitalRecordType + "/" + original.IJE_Version;
+                        string path = CreatePathFromMessageFields(original); // original.VitalRecordType + "/" + original.IJE_Version;
                         if (original.VitalRecordType == "BFDR-BIRTH")
                         {
                             ackMessage = new BirthRecordAcknowledgementMessage(message);
