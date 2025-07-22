@@ -336,8 +336,7 @@ namespace NVSSClient.Services
                         case CauseOfDeathCodingUpdateMessage.MESSAGE_TYPE:
                             CauseOfDeathCodingUpdateMessage codUpdateMsg = BaseMessage.Parse<CauseOfDeathCodingUpdateMessage>((Hl7.Fhir.Model.Bundle)entry.Resource);
                             refID = codUpdateMsg.CodedMessageId; // Added refID assignment
-                            vitalType = "VRDR";
-                            _logger.LogInformation($"*** Received coding update message: {codUpdateMsg.MessageId}");
+                           _logger.LogInformation($"*** Received coding update message: {codUpdateMsg.MessageId}");
                             ProcessResponseMessage(codUpdateMsg, refID);
                             break;
 
