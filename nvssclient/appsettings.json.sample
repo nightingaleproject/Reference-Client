@@ -20,7 +20,7 @@
         "Scope": "openid profile email"
     },
     "JurisdictionEndpoint": "https://example.com/jurisdiction/message/endpoint",
-    "LocalTesting" : false,
+    "LocalTesting" : true,
     "ResendInterval" : 14400,
     "PollingInterval" : 60
 }

@@ -122,9 +122,15 @@ namespace NVSSClient.Services
             var vrdrItems = items.Where(item => item.VitalRecordType == "VRDR").ToList();
             var brdrBirthItems = items.Where(item => item.VitalRecordType == "BFDR-BIRTH").ToList();
             var brdrFatalItems = items.Where(item => item.VitalRecordType == "BFDR-FETALDEATH").ToList();
-            SubmitMessages(vrdrItems, CreatePathFromMessageFields(vrdrItems[0]));
-            SubmitMessages(brdrBirthItems, CreatePathFromMessageFields(brdrBirthItems[0]));
-            SubmitMessages(brdrFatalItems, CreatePathFromMessageFields(brdrFatalItems[0]));
+            if (vrdrItems.Count > 0) {
+                SubmitMessages(vrdrItems, CreatePathFromMessageFields(vrdrItems[0]));
+            }
+            if (brdrBirthItems.Count > 0) {
+                SubmitMessages(brdrBirthItems, CreatePathFromMessageFields(brdrBirthItems[0]));
+            }
+            if (brdrFatalItems.Count > 0) {
+                SubmitMessages(brdrFatalItems, CreatePathFromMessageFields(brdrFatalItems[0]));
+            }
             //scope (and context) gets destroyed here
         }
 
@@ -214,9 +220,15 @@ namespace NVSSClient.Services
             var vrdrItems = items.Where(item => item.VitalRecordType == "VRDR").ToList();
             var brdrBirthItems = items.Where(item => item.VitalRecordType == "BFDR-BIRTH").ToList();
             var brdrFatalItems = items.Where(item => item.VitalRecordType == "BFDR-FETALDEATH").ToList();
-            ResendMessages(vrdrItems, CreatePathFromMessageFields(vrdrItems[0]));
-            ResendMessages(brdrBirthItems, CreatePathFromMessageFields(brdrBirthItems[0]));
-            ResendMessages(brdrFatalItems, CreatePathFromMessageFields(brdrFatalItems[0]));
+            if (vrdrItems.Count>0) { 
+                ResendMessages(vrdrItems, CreatePathFromMessageFields(vrdrItems[0])); 
+            }
+            if (brdrBirthItems.Count > 0) { 
+                ResendMessages(brdrBirthItems, CreatePathFromMessageFields(brdrBirthItems[0])); 
+            }
+            if (brdrFatalItems.Count > 0) { 
+                ResendMessages(brdrFatalItems, CreatePathFromMessageFields(brdrFatalItems[0])); 
+            }
         }
 
         // ResendMessages supports reliable delivery of messages, it finds Messages in the DB that have not been acknowledged 
