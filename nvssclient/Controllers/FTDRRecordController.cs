@@ -23,6 +23,7 @@ namespace NVSSClient.Controllers
         private readonly String _jurisdictionEndPoint;
         private static NpgsqlConnection con = new NpgsqlConnection(cs);
         private readonly IServiceScopeFactory _scopeFactory;
+        private readonly string ftdrIJEVersion = Startup.StaticConfig.GetValue<string>("SupportedIGVersions:FetalDeathRecord");
 
         public FTDRRecordController(AppDbContext context, IServiceScopeFactory scopeFactory)
         {
@@ -286,7 +287,7 @@ namespace NVSSClient.Controllers
                     item.EventYear = message.EventYear;
                     Console.WriteLine("Business IDs {0}, {1}, {2}", message.EventYear, message.CertNo, message.JurisdictionId);
 
-                    item.IJE_Version = "BFDR_STU2_0";
+                    item.IJE_Version = ftdrIJEVersion;
                     item.VitalRecordType = "BFDR-FETALDEATH";
 
                     // Status info

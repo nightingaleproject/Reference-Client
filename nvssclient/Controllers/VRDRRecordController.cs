@@ -23,6 +23,7 @@ namespace NVSSClient.Controllers
         private readonly String _jurisdictionEndPoint;
         private static NpgsqlConnection con = new NpgsqlConnection(cs);
         private readonly IServiceScopeFactory _scopeFactory;
+        private readonly string vrdrIJEVersion = Startup.StaticConfig.GetValue<string>("SupportedIGVersions:DeathRecord");
 
         public VRDRRecordController(AppDbContext context, IServiceScopeFactory scopeFactory)
         {
@@ -355,7 +356,7 @@ namespace NVSSClient.Controllers
                     item.JurisdictionID = message.JurisdictionId;
                     item.EventYear = message.DeathYear;
                     Console.WriteLine("Business IDs {0}, {1}, {2}", message.DeathYear, message.CertNo, message.JurisdictionId);
-                    item.IJE_Version = "VRDR_STU3_0";
+                    item.IJE_Version = vrdrIJEVersion;
                     item.VitalRecordType = "VRDR";
 
                     // Status info

@@ -13,11 +13,16 @@
         "LocalServer":"https://localhost:5001/MA/bundles"
     },
     "Authentication": {
-        "ClientId": "theclientid",
-        "ClientSecret": "theclientsecret",
-        "Username":"user",
-        "Password":"password",
-        "Scope": "openid profile email"
+      "ClientId": "theclientid",
+      "ClientSecret": "theclientsecret",
+      "Username": "user",
+      "Password": "password",
+      "Scope": "openid profile email"
+    },
+    "SupportedIGVersions": {
+      "DeathRecord": "VRDR_STU3_0",
+      "BirthRecord": "BFDR_STU2_0",
+      "FetalDeathRecord": "BFDR_STU2_0"
     },
     "JurisdictionEndpoint": "https://example.com/jurisdiction/message/endpoint",
     "LocalTesting" : true,
