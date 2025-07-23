@@ -16,7 +16,7 @@ namespace NVSSClient.Controllers
 {
     [Route("[controller]")]
     [ApiController]
-    public class FatalDeathRecordController : ControllerBase
+    public class FTDRRecordController : ControllerBase
     {
         private readonly AppDbContext _context;
         private static String cs = "Host=localhost;Username=postgres;Password=mysecretpassword;Database=postgres";
@@ -24,7 +24,7 @@ namespace NVSSClient.Controllers
         private static NpgsqlConnection con = new NpgsqlConnection(cs);
         private readonly IServiceScopeFactory _scopeFactory;
 
-        public FatalDeathRecordController(AppDbContext context, IServiceScopeFactory scopeFactory)
+        public FTDRRecordController(AppDbContext context, IServiceScopeFactory scopeFactory)
         {
             _context = context;
             _scopeFactory = scopeFactory;
@@ -286,7 +286,7 @@ namespace NVSSClient.Controllers
                     item.EventYear = message.EventYear;
                     Console.WriteLine("Business IDs {0}, {1}, {2}", message.EventYear, message.CertNo, message.JurisdictionId);
 
-                    item.IJE_Version = "BFDR_STU3_0";
+                    item.IJE_Version = "BFDR_STU2_0";
                     item.VitalRecordType = "BFDR-FETALDEATH";
 
                     // Status info

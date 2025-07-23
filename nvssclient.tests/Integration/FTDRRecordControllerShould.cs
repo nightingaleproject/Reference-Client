@@ -1,20 +1,20 @@
+using BFDR;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using NVSSClient.Controllers;
+using NVSSClient.Models;
 using System;
-using System.Text.Json;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text.Json;
 using System.Threading.Tasks;
 using VRDR;
-using NVSSClient.Controllers;
-using NVSSClient.Models;
-using Microsoft.AspNetCore.TestHost;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit;
-using BFDR;
 
 /**
     INSTRUCTIONS: Record Controller Tests are called explicity as part of the git runner.
@@ -24,12 +24,12 @@ using BFDR;
 namespace NVSSClient.tests 
 {
     [Collection("ClientIntegrationTests")]
-    public class BirthRecordControllerShould : IClassFixture<CustomWebApplicationFactory<NVSSClient.Startup>>
+    public class ftdrrecordControllerShould : IClassFixture<CustomWebApplicationFactory<NVSSClient.Startup>>
     {
         private readonly CustomWebApplicationFactory<NVSSClient.Startup> _factory;
         private readonly HttpClient _client;
     
-        public BirthRecordControllerShould(CustomWebApplicationFactory<NVSSClient.Startup> factory)
+        public ftdrrecordControllerShould(CustomWebApplicationFactory<NVSSClient.Startup> factory)
         {
             _factory = factory;
             _client = factory.CreateClient(new WebApplicationFactoryClientOptions{
@@ -41,9 +41,9 @@ namespace NVSSClient.tests
         [Fact]
         public async Task PostRecords_ShouldSaveMessage()
         {
-            var records = GetTestRecords("test-files/json/BasicBirthRecord.json");
+            var records = GetTestRecords("test-files/json/FatalDeathRecord.json");
             // Submit that Death Record
-            HttpRequestMessage postRequest = new HttpRequestMessage(HttpMethod.Post, "http://localhost:4300/bfdrrecord/submissions");
+            HttpRequestMessage postRequest = new HttpRequestMessage(HttpMethod.Post, "http://localhost:4300/ftdrrecord/submissions");
             var json = JsonSerializer.Serialize(records);
             postRequest.Content = new StringContent(json);
             postRequest.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
@@ -55,9 +55,9 @@ namespace NVSSClient.tests
         [Fact]
         public async Task PostRecord_ShouldSaveMessage()
         {
-            var records = GetTestRecords("test-files/json/BasicBirthRecord.json");
+            var records = GetTestRecords("test-files/json/FatalDeathRecord.json");
             // Submit that Death Record
-            HttpRequestMessage postRequest = new HttpRequestMessage(HttpMethod.Post, "http://localhost:4300/bfdrrecord/submission");
+            HttpRequestMessage postRequest = new HttpRequestMessage(HttpMethod.Post, "http://localhost:4300/ftdrrecord/submission");
             var json = JsonSerializer.Serialize(records[0]);
             postRequest.Content = new StringContent(json);
             postRequest.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
@@ -66,12 +66,11 @@ namespace NVSSClient.tests
             Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         }
 
-
         [Fact]
         public async Task PostVoidRecords_ShouldSaveMessage()
         {
             List<Dictionary<string, object>> dataList = new List<Dictionary<string, object>>();
-            var records = GetTestRecords("test-files/json/BasicBirthRecord.json");
+            var records = GetTestRecords("test-files/json/FatalDeathRecord.json");
             foreach (string record in records)
             {
                 Dictionary<string, object> data = new Dictionary<string, object>();
@@ -81,7 +80,7 @@ namespace NVSSClient.tests
             }
 
             // Submit that Death Record
-            HttpRequestMessage postRequest = new HttpRequestMessage(HttpMethod.Post, "http://localhost:4300/bfdrrecord/voids");
+            HttpRequestMessage postRequest = new HttpRequestMessage(HttpMethod.Post, "http://localhost:4300/ftdrrecord/voids");
             var json = JsonSerializer.Serialize(dataList);
             postRequest.Content = new StringContent(json);
             postRequest.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
@@ -93,14 +92,14 @@ namespace NVSSClient.tests
         [Fact]
         public async Task PostVoidRecord_ShouldSaveMessage()
         {
-            var records = GetTestRecords("test-files/json/BasicBirthRecord.json");
+            var records = GetTestRecords("test-files/json/FatalDeathRecord.json");
 
             Dictionary<string, object> data = new Dictionary<string, object>();
             data["record"] = records[0];
             data["block_count"] = 1;
 
             // Submit that Death Record
-            HttpRequestMessage postRequest = new HttpRequestMessage(HttpMethod.Post, "http://localhost:4300/bfdrrecord/void");
+            HttpRequestMessage postRequest = new HttpRequestMessage(HttpMethod.Post, "http://localhost:4300/ftdrrecord/void");
             var json = JsonSerializer.Serialize(data);
             postRequest.Content = new StringContent(json);
             postRequest.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
@@ -132,7 +131,7 @@ namespace NVSSClient.tests
         private List<String> GetTestRecords(string filepath)
         {
             List<String> testRecords = new List<String>();
-            BirthRecord record = new BirthRecord(File.ReadAllText(FixturePath(filepath)));
+            FetalDeathRecord record = new FetalDeathRecord(File.ReadAllText(FixturePath(filepath)));
             testRecords.Add(record.ToJson());
             return testRecords;
         }
