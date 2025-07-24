@@ -62,6 +62,7 @@ namespace NVSSClient.Services
             {
                 apiUrl = Startup.StaticConfig.GetConnectionString("LocalServer");
             }
+            apiUrl = apiUrl.EnsureTrailingSlash();
             client = new VR.Client(apiUrl, localDev, creds);
         }
         public IConfiguration Configuration { get; }
