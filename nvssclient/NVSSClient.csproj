@@ -16,14 +16,10 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.1" />
     <PackageReference Include="RestSharp" Version="106.12.0" />
-    <!-- <ProjectReference Include="..\..\vrdr-dotnet\VRDR.Client\VRDRClient.csproj" /> -->
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\Workspaces\nightingaleproject\vital-records-dotnet\projects\BFDR.Messaging\BFDR.Messaging.csproj" />
-    <ProjectReference Include="..\..\Workspaces\nightingaleproject\vital-records-dotnet\projects\VitalRecord.Client\VitalRecord.Client.csproj" />
-    <ProjectReference Include="..\..\Workspaces\nightingaleproject\vital-records-dotnet\projects\VitalRecord.Messaging\VitalRecord.Messaging.csproj" />
-    <ProjectReference Include="..\..\Workspaces\nightingaleproject\vital-records-dotnet\projects\VRDR.Messaging\VRDR.Messaging.csproj" />
+	  <!--*****************************************-->
+    <PackageReference Include="VitalRecord.Client" Version="1.0.0-preview.1" />
+	<PackageReference Include="BFDR.Messaging" Version="1.0.0-preview.14" />
+	<PackageReference Include="VRDR.Messaging" Version="5.1.0-preview.2" />
   </ItemGroup>
 
 </Project>
