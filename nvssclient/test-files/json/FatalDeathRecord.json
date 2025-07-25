@@ -1,0 +1,611 @@
+{
+  "resourceType": "Bundle",
+  "id": "43ec7dfc-a767-4990-8b28-fef56f90f856",
+  "meta": {
+    "profile": [
+      "http://hl7.org/fhir/us/bfdr/StructureDefinition/Bundle-document-fetal-death-report"
+    ]
+  },
+  "identifier": {
+    "extension": [
+      {
+        "url": "http://hl7.org/fhir/us/vr-common-library/StructureDefinition/CertificateNumber",
+        "valueString": "87366"
+      },
+      {
+        "url": "http://hl7.org/fhir/us/vr-common-library/StructureDefinition/AuxiliaryStateIdentifier1",
+        "valueString": "444455555"
+      }
+    ],
+    "system": "http://nchs.cdc.gov/bfdr_id",
+    "value": "2020NY087366"
+  },
+  "type": "document",
+  "timestamp": "2024-04-18T12:34:03.591881-04:00",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:de56d24e-6c85-44a2-8519-f8dbc989a82b",
+      "resource": {
+        "resourceType": "Composition",
+        "id": "de56d24e-6c85-44a2-8519-f8dbc989a82b",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/bfdr/StructureDefinition/Composition-jurisdiction-fetal-death-report"
+          ]
+        },
+        "status": "final",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "92010-8",
+              "display": "Jurisdiction fetal death report Document"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:fbdfe5ae-f40f-4119-b435-c23a5d8bb4ed"
+        },
+        "encounter": {
+          "reference": "urn:uuid:d0801c32-d417-41b7-a461-70f9cf163055"
+        },
+        "title": "Fetal Death Report",
+        "section": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "92014-0"
+                }
+              ]
+            },
+            "focus": {
+              "reference": "urn:uuid:18ef120e-0b0b-49d5-85f7-acb8f3a583b7"
+            }
+          },
+          {
+            "code": {
+                "coding": [
+                    {
+                        "system": "http://loinc.org",
+                        "code": "55752-0"
+                    }
+                ]
+            },
+            "focus": {
+                "reference": "urn:uuid:18ef120e-0b0b-49d5-85f7-acb8f3a583b7"
+            }
+          }
+        ],
+        "attester": [
+          {
+            "mode": "legal"
+          }
+        ],
+        "event": [
+          {
+            "code": [
+              {
+                "coding": [
+                  {
+                    "system": "http://snomed.info/sct",
+                    "code": "103693007",
+                    "display": "Diagnostic procedure (procedure)"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:fbdfe5ae-f40f-4119-b435-c23a5d8bb4ed",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "fbdfe5ae-f40f-4119-b435-c23a5d8bb4ed",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/bfdr/StructureDefinition/Patient-decedent-fetus"
+          ]
+        },
+        "extension": [
+          {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex",
+                "valueCode": "M"
+              },
+              {
+                "url": "motherOrFather",
+                "valueCodeableConcept": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/v3-RoleCode",
+                      "code": "MTH"
+                    }
+                  ],
+                  "text": "mother"
+                }
+              },
+              {
+                "url": "reportedAge",
+                "valueQuantity": {
+                  "value": 33,
+                  "unit": "a",
+                  "system": "http://unitsofmeasure.org",
+                  "code": "a"
+                }
+              }
+            ],
+            "url": "http://hl7.org/fhir/us/vr-common-library/StructureDefinition/Extension-reported-parent-age-at-delivery-vr"
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/patient-birthPlace",
+            "valueAddress": {
+              "city": "Buffalo",
+              "district": "buffalo",
+              "state": "NY",
+              "_district": {
+                "extension": [
+                  {
+                    "url": "http://hl7.org/fhir/us/vr-common-library/StructureDefinition/DistrictCode",
+                    "valueString": "035"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "extension": [
+              {
+                "url": "motherOrFather",
+                "valueCodeableConcept": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/v3-RoleCode",
+                      "code": "FTH"
+                    }
+                  ],
+                  "text": "father"
+                }
+              },
+              {
+                "url": "reportedAge",
+                "valueQuantity": {
+                  "value": 31,
+                  "unit": "a",
+                  "system": "http://unitsofmeasure.org",
+                  "code": "a"
+                }
+              }
+            ],
+            "url": "http://hl7.org/fhir/us/vr-common-library/StructureDefinition/Extension-reported-parent-age-at-delivery-vr"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Quinn",
+            "given": [
+              "Baby",
+              "G"
+            ]
+          }
+        ],
+        "birthDate": "2020-02-12"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:18ef120e-0b0b-49d5-85f7-acb8f3a583b7",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "18ef120e-0b0b-49d5-85f7-acb8f3a583b7",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/vr-common-library/StructureDefinition/Patient-mother-vr"
+          ]
+        },
+        "birthDate": "1992-01-12",
+        "address": [
+            {
+                "extension": [
+                    {
+                        "url": "http://hl7.org/fhir/us/vr-common-library/StructureDefinition/Extension-within-city-limits-indicator-vr"
+                    }
+                ],
+                "use": "home",
+                "line": [
+                    "7 Blue Street"
+                ],
+                "city": "Milford",
+                "district": "New Haven",
+                "state": "CT",
+                "postalCode": "06460",
+                "country": "US"
+            }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:ab2f7329-95a9-41fe-9356-931619dad692",
+      "resource": {
+        "resourceType": "RelatedPerson",
+        "id": "ab2f7329-95a9-41fe-9356-931619dad692",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/vr-common-library/StructureDefinition/RelatedPerson-father-natural-vr"
+          ]
+        },
+        "relationship": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-RoleCode",
+                "code": "NFTH"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "http://www.example.org/fhir/Location/location-south-hospital",
+      "resource": {
+        "resourceType": "Location",
+        "id": "location-south-hospital",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/bfdr/StructureDefinition/Location-bfdr"
+          ]
+        },
+        "text": {
+          "status": "generated",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><a name=\"Location_location-south-hospital\"> </a><p><b>Generated Narrative: Location </b><a name=\"location-south-hospital\"> </a><a name=\"hclocation-south-hospital\"> </a></p><div style=\"display: inline-block; background-color: #d9e0e7; padding: 6px; margin: 4px; border: 1px solid #8da1b4; border-radius: 5px; line-height: 60%\"><p style=\"margin-bottom: 0px\">ResourceLocation &quot;location-south-hospital&quot; </p><p style=\"margin-bottom: 0px\">Profile: <a href=\"StructureDefinition-Location-bfdr.html\">Birth and Fetal Death Location</a></p></div><p><b>identifier</b>: <a href=\"http://terminology.hl7.org/5.0.0/NamingSystem-npi.html\" title=\"National Provider Identifier\">NPI</a>/116441967701</p><p><b>status</b>: active</p><p><b>name</b>: South Hospital</p><p><b>type</b>: Hospital <span style=\"background: LightGoldenRodYellow; margin: 4px; border: 1px solid khaki\"> (<a href=\"http://terminology.hl7.org/5.5.0/CodeSystem-v3-RoleCode.html\">RoleCode</a>#HOSP)</span>, Birth Location <span style=\"background: LightGoldenRodYellow; margin: 4px; border: 1px solid khaki\"> (<a href=\"CodeSystem-CodeSystem-local-bfdr-codes.html\">Local BFDR Codes</a>#loc_birth)</span></p><p><b>address</b>: 2100 North Ave Salt Lake City UT 84116 US </p><h3>Positions</h3><table class=\"grid\"><tr><td style=\"display: none\">-</td><td><b>Longitude</b></td><td><b>Latitude</b></td></tr><tr><td style=\"display: none\">*</td><td>40.8</td><td>111.9</td></tr></table><p><b>managingOrganization</b>: See on this page: Organization/organization-south-hospital: Organization - South Hospital</p></div>"
+        },
+        "identifier": [
+          {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/us/bfdr/StructureDefinition/Extension-jurisdictional-facility-identifier",
+                "valueString": "UT12"
+              }
+            ],
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "116441967701"
+          }
+        ],
+        "status": "active",
+        "name": "South Hospital",
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-RoleCode",
+                "code": "HOSP",
+                "display": "Hospital"
+              }
+            ]
+          },
+          {
+            "coding": [
+              {
+                "system": "http://hl7.org/fhir/us/bfdr/CodeSystem/CodeSystem-local-bfdr-codes",
+                "code": "loc_birth",
+                "display": "Birth Location"
+              }
+            ]
+          }
+        ],
+        "address": {
+          "line": [
+            "2100 North Ave"
+          ],
+          "city": "Salt Lake City",
+          "district": "Made Up",
+          "state": "UT",
+          "postalCode": "84116",
+          "country": "US"
+        },
+        "position": {
+          "longitude": 40.8,
+          "latitude": 111.9
+        },
+        "managingOrganization": {
+          "reference": "Organization/organization-south-hospital",
+          "display": "Organization - South Hospital"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:139fd854-780b-4427-b3cf-6c85f41e6f35",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "139fd854-780b-4427-b3cf-6c85f41e6f35",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/vr-common-library/StructureDefinition/Practitioner-vr"
+          ]
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/us/bfdr/StructureDefinition/Extension-role",
+            "valueCode": "certifier"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:348f658f-b005-4136-9831-08c7b197d474",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "348f658f-b005-4136-9831-08c7b197d474",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/vr-common-library/StructureDefinition/Practitioner-vr"
+          ]
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/us/bfdr/StructureDefinition/Extension-role",
+            "valueCode": "attendant"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:a31bf759-1f3a-4bf0-aa3a-aa3f1ec94140",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "a31bf759-1f3a-4bf0-aa3a-aa3f1ec94140",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8339-4"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:fbdfe5ae-f40f-4119-b435-c23a5d8bb4ed"
+        },
+        "valueQuantity": {
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/us/vr-common-library/StructureDefinition/BypassEditFlag",
+              "valueCodeableConcept": {
+                "coding": [
+                  {
+                    "system": "http://hl7.org/fhir/us/vr-common-library/CodeSystem/CodeSystem-vr-edit-flags",
+                    "code": "0off",
+                    "display": "Off"
+                  }
+                ]
+              }
+            }
+          ],
+          "value": 3333,
+          "unit": "g",
+          "code": "g"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:8ebfaaa0-aa3e-49fd-aed4-45c93f8e292a",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "8ebfaaa0-aa3e-49fd-aed4-45c93f8e292a",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/bfdr/StructureDefinition/Observation-autopsy-histological-exam-results-used"
+          ]
+        },
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "74498-7",
+              "display": "Were autopsy or histological placental examinations results used in determining the cause of fetal death?"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:18ef120e-0b0b-49d5-85f7-acb8f3a583b7"
+        },
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v2-0136",
+              "code": "Y",
+              "display": "Yes"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:32ca4848-9803-4f64-817d-88459703b772",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "32ca4848-9803-4f64-817d-88459703b772",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/vr-common-library/StructureDefinition/Observation-autopsy-performed-indicator-vr"
+          ]
+        },
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "85699-7",
+              "display": "Autopsy Performed Indicator"
+            }
+          ]
+        },
+        "subject": {
+          "reference": "urn:uuid:18ef120e-0b0b-49d5-85f7-acb8f3a583b7"
+        },
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system" : "http://snomed.info/sct",
+              "code" : "398166005",
+              "display" : "Performed"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:3fe557f1-4928-466e-bc4e-7e6dc71c74ed",
+      "resource": {
+          "resourceType": "Condition",
+          "id": "3fe557f1-4928-466e-bc4e-7e6dc71c74ed",
+          "category": [
+              {
+                  "coding": [
+                      {
+                          "system": "http://loinc.org",
+                          "code": "76060-3"
+                      }
+                  ]
+              }
+          ],
+          "code": {
+              "coding": [
+                  {
+                      "system": "http://snomed.info/sct",
+                      "code": "44223004"
+                  }
+              ]
+          },
+          "subject": {
+              "reference": "urn:uuid:5f76fab9-6fb0-4901-9c4a-dcedab7e1ef4"
+          }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:3819b92a-8906-4370-8326-7f8088fcb722",
+      "resource": {
+          "resourceType": "Observation",
+          "id": "3819b92a-8906-4370-8326-7f8088fcb722",
+          "meta": {
+              "profile": [
+                  "http://hl7.org/fhir/us/vr-common-library/StructureDefinition/input-race-and-ethnicity-vr"
+              ]
+          },
+          "status": "final",
+          "code": {
+              "coding": [
+                  {
+                      "system": "http://hl7.org/fhir/us/vr-common-library/CodeSystem/CodeSystem-local-observation-codes-vr",
+                      "code": "inputraceandethnicityMother",
+                      "display": "Input Race and Ethnicity Person"
+                  }
+              ]
+          },
+          "subject": {
+              "reference": "urn:uuid:9c4ca888-c4dc-4aa6-9673-828923445ce8"
+          },
+          "component": [
+              {
+                  "code": {
+                      "coding": [
+                          {
+                              "system": "http://hl7.org/fhir/us/vr-common-library/CodeSystem/codesystem-vr-component",
+                              "code": "HispanicLiteral",
+                              "display": "Hispanic Literal"
+                          }
+                      ]
+                  },
+                  "valueString": "Colombian"
+              },
+              {
+                  "code": {
+                      "coding": [
+                          {
+                              "system": "http://hl7.org/fhir/us/vr-common-library/CodeSystem/codesystem-vr-component",
+                              "code": "HispanicCuban",
+                              "display": "Hispanic Cuban"
+                          }
+                      ]
+                  },
+                  "valueCodeableConcept": {
+                      "coding": [
+                          {
+                              "system": "http://terminology.hl7.org/CodeSystem/v2-0136",
+                              "code": "Y",
+                              "display": "Yes"
+                          }
+                      ]
+                  }
+              },
+              {
+                  "code": {
+                      "coding": [
+                          {
+                              "system": "http://hl7.org/fhir/us/vr-common-library/CodeSystem/codesystem-vr-component",
+                              "code": "BlackOrAfricanAmerican",
+                              "display": "Black Or African American"
+                          }
+                      ]
+                  },
+                  "valueBoolean": true
+              }
+          ]
+      }
+  },
+  {
+      "fullUrl": "urn:uuid:c2a5861e-9b5f-4837-826d-38d9a24d71c3",
+      "resource": {
+          "resourceType": "Observation",
+          "id": "c2a5861e-9b5f-4837-826d-38d9a24d71c3",
+          "meta": {
+              "profile": [
+                  "http://hl7.org/fhir/us/vr-common-library/StructureDefinition/input-race-and-ethnicity-vr"
+              ]
+          },
+          "status": "final",
+          "code": {
+              "coding": [
+                  {
+                      "system": "http://hl7.org/fhir/us/vr-common-library/CodeSystem/CodeSystem-local-observation-codes-vr",
+                      "code": "inputraceandethnicityFather",
+                      "display": "Input Race and Ethnicity Person"
+                  }
+              ]
+          },
+          "subject": {
+              "reference": "urn:uuid:9c4ca888-c4dc-4aa6-9673-828923445ce8"
+          },
+          "component": [
+              {
+                  "code": {
+                      "coding": [
+                          {
+                              "system": "http://hl7.org/fhir/us/vr-common-library/CodeSystem/codesystem-vr-component",
+                              "code": "White",
+                              "display": "White"
+                          }
+                      ]
+                  },
+                  "valueBoolean": true
+              }
+          ]
+      }
+  }
+  ]
+}
