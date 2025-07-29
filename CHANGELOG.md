@@ -1,9 +1,9 @@
 ## Changelog
 
 ### v2.0.0 - 2025-07-29
-*Refactored RecordController to VRDRRecordController
-*Added BFDRRecordController and FTDRRecordController 
-*Using a signle Client which serves all 3 : Death, Birth and Fetal-Death record
+* Refactored RecordController to VRDRRecordController
+* Added BFDRRecordController and FTDRRecordController 
+* Using a signle Client which serves all 3 : Death, Birth and Fetal-Death record
 
 ### v1.0.0 - 2025-07-22
 * Update VRDR.Client to v4.4.0
