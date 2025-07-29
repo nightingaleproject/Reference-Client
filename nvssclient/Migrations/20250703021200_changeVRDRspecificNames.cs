@@ -4,7 +4,7 @@
 
 namespace NVSSClient.Migrations
 {
-    public partial class _20250702220201_changeVRDRspecificNames : Migration
+    public partial class ChangeVRDRspecificNames : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {

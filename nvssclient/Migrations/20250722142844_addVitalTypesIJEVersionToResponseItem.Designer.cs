@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NVSSClient.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250722142844_20250722021200_addVitalTypesIJEVersionToResponseItem")]
-    partial class _20250722021200_addVitalTypesIJEVersionToResponseItem
+    [Migration("20250722142844_addVitalTypesIJEVersionToResponseItem")]
+    partial class AddVitalTypesIJEVersionToResponseItem
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {

@@ -4,7 +4,7 @@
 
 namespace NVSSClient.Migrations
 {
-    public partial class _20250722021200_addVitalTypesIJEVersionToResponseItem : Migration
+    public partial class AddVitalTypesIJEVersionToResponseItem : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {

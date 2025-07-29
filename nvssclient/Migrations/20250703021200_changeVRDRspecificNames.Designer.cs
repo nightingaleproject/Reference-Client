@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NVSSClient.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250703021200_20250702220201_changeVRDRspecificNames")]
-    partial class _20250702220201_changeVRDRspecificNames
+    [Migration("20250703021200_changeVRDRspecificNames")]
+    partial class ChangeVRDRspecificNames
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
