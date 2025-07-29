@@ -112,7 +112,7 @@ namespace NVSSClient.tests
         [Fact]
         public async Task GetMessageStatus_ReturnsMessages()
         {
-            var response = await _client.GetAsync("/record/2020/NY/182");
+            var response = await _client.GetAsync("/bfdrrecord/2020/NY/182");
             response.EnsureSuccessStatusCode();
             var responseString = await response.Content.ReadAsStringAsync();
             //Assert, for now just check it's not empty
@@ -122,7 +122,7 @@ namespace NVSSClient.tests
         [Fact]
         public async Task GetMessages_ReturnsMessages()
         {
-            var response = await _client.GetAsync("/record");
+            var response = await _client.GetAsync("/bfdrrecord");
             response.EnsureSuccessStatusCode();
             var responseString = await response.Content.ReadAsStringAsync();
             //Assert, for now just check it's not empty
