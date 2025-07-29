@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NVSSClient.Models;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace NVSSClient.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250703021200_changeVRDRspecificNames")]
+    partial class ChangeVRDRspecificNames
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -42,9 +44,6 @@ namespace NVSSClient.Migrations
                     b.Property<DateTime?>("ExpirationDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("IGVersion")
-                        .HasColumnType("text");
-
                     b.Property<string>("JurisdictionID")
                         .HasColumnType("text");
 
@@ -65,9 +64,6 @@ namespace NVSSClient.Migrations
 
                     b.Property<DateTime>("UpdatedDate")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("VitalRecordType")
-                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -91,9 +87,6 @@ namespace NVSSClient.Migrations
                     b.Property<long?>("EventYear")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("IGVersion")
-                        .HasColumnType("text");
-
                     b.Property<string>("JurisdictionID")
                         .HasColumnType("text");
 
@@ -111,9 +104,6 @@ namespace NVSSClient.Migrations
 
                     b.Property<DateTime>("UpdatedDate")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("VitalRecordType")
-                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
