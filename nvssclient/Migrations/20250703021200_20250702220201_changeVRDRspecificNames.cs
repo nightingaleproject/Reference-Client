@@ -29,7 +29,7 @@ namespace NVSSClient.Migrations
                 newName: "JurisdictionID");
 
             migrationBuilder.AddColumn<string>(
-                name: "IJE_Version",
+                name: "IGVersion",
                 table: "MessageItems",
                 type: "text",
                 nullable: true);
@@ -64,7 +64,7 @@ namespace NVSSClient.Migrations
                 newName: "DeathYear"); 
             
             migrationBuilder.DropColumn(
-                name: "IJE_Version",
+                name: "IGVersion",
                 table: "MessageItems");
 
             migrationBuilder.DropColumn(

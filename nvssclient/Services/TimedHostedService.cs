@@ -137,20 +137,20 @@ namespace NVSSClient.Services
 
         private string CreatePathFromMessageFields(MessageItem item)
         {
-            string optionalPath = "VRDR/VRDR_STU3_0";
-            if (item !=null && !item.VitalRecordType.IsNullOrWhiteSpace() && !item.IJE_Version.IsNullOrWhiteSpace())
+            string optionalPath = "VRDR/VRDR_STU2_2";
+            if (item !=null && !item.VitalRecordType.IsNullOrWhiteSpace() && !item.IGVersion.IsNullOrWhiteSpace())
             {
-                optionalPath = item.VitalRecordType.ToString() + "/" + item.IJE_Version;
+                optionalPath = item.VitalRecordType.ToString() + "/" + item.IGVersion;
             }
             return optionalPath;
         }
 
         private string CreatePathFromResponseFields(ResponseItem item)
         {
-            string optionalPath = "VRDR/VRDR_STU3_0";
-            if (item != null && !item.VitalRecordType.IsNullOrWhiteSpace() && !item.IJE_Version.IsNullOrWhiteSpace())
+            string optionalPath = "VRDR/VRDR_STU2_2";
+            if (item != null && !item.VitalRecordType.IsNullOrWhiteSpace() && !item.IGVersion.IsNullOrWhiteSpace())
             {
-                optionalPath = item.VitalRecordType.ToString() + "/" + item.IJE_Version;
+                optionalPath = item.VitalRecordType.ToString() + "/" + item.IGVersion;
             }
             return optionalPath;
         }
@@ -665,15 +665,12 @@ namespace NVSSClient.Services
                         if (responseItems[0].VitalRecordType == "BFDR-BIRTH")
                         {
                             ackMessage = new BirthRecordAcknowledgementMessage(message);
-                           // path = vitalType + "/" + "BFDR_STU3_0";
                         } else if (responseItems[0].VitalRecordType == "BFDR-FETALDEATH")
                         {
                             ackMessage = new FetalDeathRecordAcknowledgementMessage(message);
-                           // path = vitalType + "/" + "BFDR_STU3_0";
                         } else
                         {
                             ackMessage = new AcknowledgementMessage(message);
-                           // path = "VRDR" + "/" + "VRDR_STU3_0";
                         }
 
                         HttpResponseMessage rsp = 
@@ -717,7 +714,7 @@ namespace NVSSClient.Services
                     response.EventYear = message.EventYear;//message.DeathYear;
                     response.Message = message.ToJson().ToString();
                     response.VitalRecordType = original.VitalRecordType;
-                    response.IJE_Version = original.IJE_Version;
+                    response.IGVersion = original.IGVersion;
                     context.ResponseItems.Add(response);
 
                     context.SaveChanges();
@@ -728,7 +725,7 @@ namespace NVSSClient.Services
                             message.MessageType != FetalDeathRecordStatusMessage.MESSAGE_TYPE && message.MessageType != BirthRecordStatusMessage.MESSAGE_TYPE)
                     {
                         CommonMessage ackMessage = null;
-                        string path = CreatePathFromMessageFields(original); // original.VitalRecordType + "/" + original.IJE_Version;
+                        string path = CreatePathFromMessageFields(original); // original.VitalRecordType + "/" + original.IGVersion;
                         if (original.VitalRecordType == "BFDR-BIRTH")
                         {
                             ackMessage = new BirthRecordAcknowledgementMessage(message);

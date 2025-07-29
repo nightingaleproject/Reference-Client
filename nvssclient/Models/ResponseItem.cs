@@ -15,6 +15,6 @@ namespace NVSSClient.Models
         public String JurisdictionID { get; set; }
         public String Message {get; set;}
         public String VitalRecordType { get; set; }
-        public String IJE_Version { get; set; }
+        public String IGVersion { get; set; }
     }
 }

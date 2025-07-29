@@ -42,7 +42,7 @@ namespace NVSSClient.Migrations
                     b.Property<DateTime?>("ExpirationDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("IJE_Version")
+                    b.Property<string>("IGVersion")
                         .HasColumnType("text");
 
                     b.Property<string>("JurisdictionID")
@@ -91,7 +91,7 @@ namespace NVSSClient.Migrations
                     b.Property<long?>("EventYear")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("IJE_Version")
+                    b.Property<string>("IGVersion")
                         .HasColumnType("text");
 
                     b.Property<string>("JurisdictionID")

@@ -23,7 +23,7 @@ namespace NVSSClient.Controllers
         private readonly String _jurisdictionEndPoint;
         private static NpgsqlConnection con = new NpgsqlConnection(cs);
         private readonly IServiceScopeFactory _scopeFactory;
-        private readonly string brdrIJEVersion = Startup.StaticConfig.GetValue<string>("SupportedIGVersions:BirthRecord");
+        private readonly string brdrIGVersion = Startup.StaticConfig.GetValue<string>("SupportedIGVersions:BirthRecord");
  
         public BFDRRecordController(AppDbContext context, IServiceScopeFactory scopeFactory)
         {
@@ -287,7 +287,7 @@ namespace NVSSClient.Controllers
                     item.EventYear = message.EventYear;
                     Console.WriteLine("Business IDs {0}, {1}, {2}", message.EventYear, message.CertNo, message.JurisdictionId);
 
-                    item.IJE_Version = brdrIJEVersion;
+                    item.IGVersion = brdrIGVersion;
                     item.VitalRecordType = "BFDR-BIRTH";
 
                     // Status info

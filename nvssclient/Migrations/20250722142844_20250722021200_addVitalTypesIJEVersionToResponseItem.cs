@@ -9,7 +9,7 @@ namespace NVSSClient.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<string>(
-                name: "IJE_Version",
+                name: "IGVersion",
                 table: "ResponseItems",
                 type: "text",
                 nullable: true);
@@ -24,7 +24,7 @@ namespace NVSSClient.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "IJE_Version",
+                name: "IGVersion",
                 table: "ResponseItems");
 
             migrationBuilder.DropColumn(
