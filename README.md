@@ -2,7 +2,7 @@
 NCHS is working to modernize the national collection and exchange of mortality data by developing and deploying new Application Programming Interfaces (APIs) for data exchange, implementing modern standards health like HL7's Fast Healthcare Interoperability Resources (FHIR), and improving overall systems and processes. This repository provides a reference implementation and documentation describing the Reference Client, which supports the client side exchange of mortality data between vital records jurisdictions and NCHS. For the server side implementation, see [NVSS API server](https://github.com/nightingaleproject/Reference-NCHS-API).
 
 # Reference Client
-The Reference Client is an example implementation for jurisdications that handles submitting VRDR FHIR Messages, reliable delivery (acknowledgements and retries), and retrieving message responses from the [NVSS API server](https://github.com/nightingaleproject/Reference-NCHS-API). The implementation follows the [FHIR Messaging IG](http://build.fhir.org/ig/nightingaleproject/vital_records_fhir_messaging_ig/branches/main/message.html). The reference implementation is developed for .NET using C# and leverages the [vrdr-dotnet](https://github.com/nightingaleproject/vrdr-dotnet) library to create and parse FHIR Messages. This implementation uses the [VRDR.Client](https://github.com/nightingaleproject/vrdr-dotnet) library to make calls to the [NVSS API server](https://github.com/nightingaleproject/Reference-NCHS-API). If you are looking to build your own client, see the [VRDR.Client](https://github.com/nightingaleproject/vrdr-dotnet) library for basic library functions to authenticate, post records, and retrieve responses from the [NVSS API server](https://github.com/nightingaleproject/Reference-NCHS-API).
+The Reference Client is an example implementation for jurisdications that handles submitting VRDR and BFDR FHIR Messages, reliable delivery (acknowledgements and retries), and retrieving message responses from the [NVSS API server](https://github.com/nightingaleproject/Reference-NCHS-API). The implementation follows the [FHIR Messaging IG](http://build.fhir.org/ig/nightingaleproject/vital_records_fhir_messaging_ig/branches/main/message.html). The reference implementation is developed for .NET using C# and leverages the [vital-records-dotnet](https://github.com/nightingaleproject/vital-records-dotnet) library to create and parse FHIR Messages. This implementation uses the [VR.Client](https://github.com/nightingaleproject/vital-records-dotnet) library to make calls to the [NVSS API server](https://github.com/nightingaleproject/Reference-NCHS-API). If you are looking to build your own client, see the [VR.Client](https://github.com/nightingaleproject/vital-records-dotnet) library for basic library functions to authenticate, post records, and retrieve responses from the [NVSS API server](https://github.com/nightingaleproject/Reference-NCHS-API).
 
 The client is responsible for interacting with the NVSS API server so jurisdictions do not need to duplicate work when building their own client. The client abstracts away the reliable message delivery and retrieval between the client and NVSS API server. It provides its own API interface to jurisdictions to simplify their workflow. 
 
@@ -15,8 +15,11 @@ This client can be used to test and demo messaging between the client and the NV
 ### Architecture Description
 The client implementation runs a service that submits messages to the NVSS API and retrieves responses to make available to jurisdictions. The service handles reliable delivery, resends, and parsing so jurisdictions do not need to implement a custom service. The service sits between the jurisdiction's system and the NVSS API Server.  
 Example workflow
-- The VRDR reporter sends a JSON vrdr record via `POST` to the client's `/record/submission`, `/record/update`, or `/record/void` endpoint
-- Upon receipt, the client converts the json to a VRDR record, wraps it in a FHIR Message and inserts it in the `MessageItem` table
+- The VRDR/BFDR/FTDR reporter sends a JSON vrdr/brdr/ftdr record via `POST` to the client's via following Endpoints
+  - for Death Records (VRDR)  `/vrdrrecord/submission` or `/bfdrrecord/submission`, `/vrdrrecord/update`, or `/vrdrrecord/void` endpoint
+  - for Brith Records (BFDR)  `/bfdrrecord/submission`, `/bfdrrecord/update`, or `/bfdrrecord/void` endpoint
+  - for Fetal Death Records (FTDR) `/ftdrrecord/submission`, `/ftdrrecord/update`, or `/ftdrrecord/void` endpoint
+- Upon receipt, the client converts the json to a VRDR/BFDR/FTDR record, wraps it in a FHIR Message and inserts it in the `MessageItem` table
 - The client's `TimedService` pulls new messages from the `MessageItem` table every X-configured seconds and POSTs the message to NVSS API Server
 - Next, the `TimedService` makes a `GET` request for any new messages from the NVSS API Server
 - The `TimedService` parses the response messages and stores them in the `ResponseItems` table
@@ -24,43 +27,46 @@ Example workflow
 - Finally, the `TimedService` checks for any messages that have not received an acknowledgement in Y-configured seconds and resubmits them
   - The TimedService runs these three steps in sequence every X-configured seconds
   - The frequencies of X and Y are configurable
-- The VRDR reporter sends a `GET` request to the `/record/{deathYear}/{jurisdictionId}/{certNo}` endpoint at any time to get the status of the message with the provided business identifiers for death year, jurisdiction id, and certificate number
+- The reporter sends a `GET` request to the following endpoint based on the record tpe at any time to get the status of the message with the provided business identifiers for event year, jurisdiction id, and certificate number
+- VRDR `/vrdrrecord/{deathYear}/{jurisdictionId}/{certNo}`
+- BFDR `/bfdrrecord/{eventYear}/{jurisdictionId}/{certNo}`
+- FTDR `/ftdrrecord/{eventYear}/{jurisdictionId}/{certNo}`
 
 Note that if a submission message was sent, followed by an update message with the same business identifiers, the returned status will be for the latest message inserted into the database, in this case the update message status. 
 
 # API Endpoints
-The client implementation has endpoints to submit VRDR records, update records, and void records. It also has an endpoint to retrieve the status and response of a given record.
+The client implementation has endpoints to submit VRDR/BFDR/FTDR records, update records, and void records. It also has an endpoint to retrieve the status and response of a given record.
 ## Sending VRDR Records
 ### Submission Records
-1. `POST /record/submission` 
-   1. Parameters: The `POST /record/submission` endpoint accepts a VRDR record as json
+1. `POST /vrdrrecord/submission` or `POST /bfdrrecord/submission` or `POST /ftdrrecord/submission`
+   1. Parameters: The `POST /<vrdr|bfdr|ftdr>record/submission` endpoint accepts a VRDR/BFDR/FTDR record as json
    2. Function: Wraps the record in a FHIR Submission message and queues the message to be sent to the NVSS API Server
    3. Response: A successful request returns `204 No Content`
-2. `POST /record/submissions` 
-   1. Parameters: The `POST /record/submissions` endpoint accepts a list of VRDR records as json
+2. `POST /vrdrrecord/submissions` or `POST /brdrrecord/submissions` or `POST /ftdrrecord/submissions`
+   1. Parameters: The `POST /<vrdr|bfdr|ftdr>record/submissions` endpoint accepts a list of VRDR/BFDR/FTDR records as json
    2. Function: Wraps each record in a FHIR Submission message and queues the message to be sent to the NVSS API Server
    3. Response: A successful request returns `204 No Content`
 ### Update Records
-1. `POST /record/update` 
-   1. Parameters: The `POST /record/update` endpoint accepts a VRDR record as json
+1. `POST /vrdrrecord/update` or `POST /bfdrrecord/update` or `POST /ftdrrecord/update` 
+   1. Parameters: The `POST /<vrdr|bfdr|ftdr>record/update` endpoint accepts a VRDR/BFDR/FTDR record as json
    2. Function: Wraps the record in a FHIR Update message and queues the message to be sent to the NVSS API Server
    3. Response: A successful request returns `204 No Content`
-2. `POST /record/updates` 
-   1. Parameters: The `POST /record/updates` endpoint accepts a list of VRDR records as json
+2. `POST /vrdrrecord/updates` or `POST /bfrecord/updates` or `POST /ftrecord/updates`
+   1. Parameters: The `POST /<vrdr|bfdr|ftdr>record/updates` endpoint accepts a list of VRDR/BFDR/FTDR records as json
    2. Function: Wraps each record in a FHIR Update message and queues the message to be sent to the NVSS API Server
    3. Response: A successful request returns `204 No Content`
 ### Void Records
-1. `POST /record/void` 
-   1. Parameters: The `POST /record/void` endpoint accepts a VRDR record as json and a `block_count` parameter
+1. `POST /vrdrrecord/void` or `POST /bfdrrecord/void` or `POST /ftdrrecord/void`
+   1. Parameters: The `POST /<vrdr|bfdr|ftdr>record/void` endpoint accepts a VRDR/BFDR/FTDR record as json and a `block_count` parameter
    2. Function: Wraps the record in a FHIR Void message, sets the block count, and queues the message to be sent to the NVSS API Server
    3. Response: A successful request returns `204 No Content`
-2. `POST /record/voids` 
-   1. Parameters: The `POST /record/voids` endpoint accepts a list of VRDR records and associated `block_count` as json
+2. `POST /vrdrrecord/voids` or `POST /bfdrrecord/voids` or `POST /ftdrrecord/voids`
+   1. Parameters: The `POST /<vrdr|bfdr|ftdr>record/voids` endpoint accepts a list of VRDR/BFDR/FTDR records and associated `block_count` as json
    2. Function: Wraps each record in a FHIR Void message, sets the block count, and queues the message to be sent to the NVSS API Server
    3. Response: A successful request returns `204 No Content`
 ### Alias Records
-1. `POST /record/alias` 
-   1. Parameters: The `POST /record/alias` endpoint accepts a VRDR record as json as well as the following parameters
+1. `POST /vrdrrecord/alias` 
+   1. Parameters: The `POST /vrdrrecord/alias` endpoint accepts a VRDR record as json as well as the following parameters
       1. `alias_decedent_first_name`
       2. `alias_decedent_last_name`
       3. `alias_decedent_name_suffix`
@@ -69,7 +75,7 @@ The client implementation has endpoints to submit VRDR records, update records, 
    2. Function: Wraps the record in a FHIR Alias message, sets the alias values, and queues the message to be sent to the NVSS API Server
    3. Response: A successful request returns `204 No Content`
 2. `POST /record/aliases` 
-   1. Parameters: The `POST /record/aliases` endpoint accepts a list of VRDR records and associated parameters below as json
+   1. Parameters: The `POST /vrdrrecord/aliases` endpoint accepts a list of VRDR records and associated parameters below as json
       1. `alias_decedent_first_name`
       2. `alias_decedent_last_name`
       3. `alias_decedent_name_suffix`
@@ -78,11 +84,11 @@ The client implementation has endpoints to submit VRDR records, update records, 
    2. Function: Wraps each record in a FHIR Alias message, sets the alias parameters, and queues the message to be sent to the NVSS API Server
    3. Response: A successful request returns `204 No Content`
 ## Checking Responses
-1. `GET /record/{deathYear}/{jurisdictionId}/{certNo}`
+1. `GET /record/{eventYear}/{jurisdictionId}/{certNo}`
    1. Parameters: 
-      1. deathYear: the year of death in the VRDR record 
-      2. jurisditionId: the jurisdiction Id in the VRDR record
-      3. certNo: the 6 digit certificate number in the VRDR record
+      1. eventYear: the year of death in the VRDR record/ the year of the eventYear of BFDR/FTDR records 
+      2. jurisditionId: the jurisdiction Id in the VRDR/BFDR/FTDR record
+      3. certNo: the 6 digit certificate number in the VRDR/BFDR/FTDR record
    2. Function: Retrieves the most recent MessageItem with business identifiers that match the provided parameters
    3. Response: A successful request returns `200 OK` and a JSON object with the MessageItem and it's Extraction Error or Coded Response if available
 
@@ -105,6 +111,10 @@ This project uses dotnet and docker to run the local database.
     5. In `appsettings.json` fill out the `"Authentication"` section to authenticate to the server via oauth, contact admin for your credentials
     6. In `appsettings.json` set `"ResendInterval"` to your desired interval. The recommended length in production is 4 hours, or 14400 seconds. If you are testing the resend implementation then you may want to set it to a shorter interval like 10 seconds to see results quickly.
     7. In `appsettings.json` set `"PollingInterval"` to the frequency you want to poll for new responses. In production, 1 hour may be a good interval to use, but for testing an interval like 30 seconds may be better for seeing results quickly.
+	8. In `appsettings.json` set `"SupportedIGVersions"` to the current IGVersion is use for example     
+				`"DeathRecord": "VRDR_STU3_0",`
+				`"BirthRecord": "BFDR_STU2_0",`
+				`"FetalDeathRecord": "BFDR_STU2_0"`
 3. Set up OAuth 
    1. OAuth is required to authenticate to the NVSS API Server. Contact the NVSS server team to acquire your client id, client secret, username, and password.
    2. In `appsettings.json` set `"ClientId": "<your-client-id>"`
@@ -140,19 +150,23 @@ This project uses dotnet and docker to run the local database.
 # Interacting with the Client API
 ## Sending VRDR Records
 ### Submission Records
-1. Create a FHIR Record. The standard that specifies this format can be found [here](https://build.fhir.org/ig/HL7/vrdr/branches/Sep_2021_Connectathon/). There are also two public library implementations available to assist in the creation of FHIR Records, [VRDR-dotnet](https://github.com/nightingaleproject/vrdr-dotnet) and [VRDR_javalib](https://github.com/MortalityReporting/VRDR_javalib).
-2. Submit the record using a POST request to the `/record/submission` endpoint. The following example demonstrates how to make the request using [curl](https://curl.se/):
+1. Create a FHIR Record. The standard that specifies this format can be found at following depending on type of records
+	[VRDR](https://nightingaleproject.github.io/vital_records_fhir_messaging_ig/v2.0.0).
+		There are also two public library implementations available to assist in the creation of FHIR Records, [VRDR-dotnet](https://github.com/nightingaleproject/vrdr-dotnet) and [VRDR_javalib](https://github.com/MortalityReporting/VRDR_javalib).
+   		There is also a .NET library and json examples available to assist in the creation of BFDR FHIR Records,[BFDR-dotnet](https://github.com/nightingaleproject/vital-records-dotnet/tree/main/projects/BFDR) and [BFDR-Examples](https://github.com/nightingaleproject/vital-records-dotnet/tree/main/projects/BFDR.Tests/fixtures/json).
+			
+2. Submit the record using a POST request to the `/vrdrrecord/submission` or `/bfdrrecord/submission` or `/ftdrrecord/submission` endpoint. The following example demonstrates how to make the request using [curl](https://curl.se/):
 ```
-    curl --location --request POST 'http://localhost:4300/record/submission' \
+    curl --location --request POST 'http://localhost:4300/vrdrrecord/submission' \
     --header 'Content-Type: application/json' \
     --data "@path/to/file.json"
 ```
 The API will return a 204 No Content HTTP response if the request was successful.
 
 ## Retrieving Responses
-1. After submitting a record, use the `GET /record/{deathYear}/{jurisdictionId}/{certNo}` endpoint to check the status of the message and the coded response if available. The json response will include the status of the most recent message with the provided business identifiers `deathYear`, `jurisdictionId`, and `certNo`. The following example demonstrates how to make the request using [curl](https://curl.se/):
+1. After submitting a record, use the `GET /vrdrrecord/{deathYear}/{jurisdictionId}/{certNo}` endpoint to check the status of the message and the coded response if available. The json response will include the status of the most recent message with the provided business identifiers `deathYear`, `jurisdictionId`, and `certNo`. The following example demonstrates how to make the request using [curl](https://curl.se/):
 ```
-curl http://localhost:4300/record/status/2018/MA/001
+curl http://localhost:4300/vrdrrecord/status/2018/MA/001
 ```
 The API will return a json response if the request was successful. Example Response:
 ```
@@ -201,7 +215,7 @@ This section provides useful information to developers working on the client imp
 
 ## Developer Notes and Justifications
 - To persist data and make it available to the Jurisidction upon request, the full response message is stored in the ResponseItems table, rather than just the ID in a Message Log. The ResponseItem table serves as the Message Log, see [FHIR Messaging IG](http://build.fhir.org/ig/nightingaleproject/vital_records_fhir_messaging_ig/branches/main/message.html)
-- The `POST /record` end point does not return data because the submission and coding process takes too long to provide a synchronous response. The user can request the message status via the `GET /record` endpoint. 
+- The `POST /vrdrrecord` end point does not return data because the submission and coding process takes too long to provide a synchronous response. The user can request the message status via the `GET /vrdrrecord` endpoint. 
 
 Down the road tasks and questions
 - Existing issue when applying new migrations requires temporarily commenting out the TimedService
