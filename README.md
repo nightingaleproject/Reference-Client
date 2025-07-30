@@ -152,10 +152,9 @@ This project uses dotnet and docker to run the local database.
 ## Sending VRDR Records
 ### Submission Records
 1. Create a FHIR Record. The standard that specifies this format can be found at following depending on type of records
-	[VRDR](https://build.fhir.org/ig/HL7/vrdr/branches/Sep_2021_Connectathon/). 
+	[VRDR](https://nightingaleproject.github.io/vital_records_fhir_messaging_ig/v2.0.0/onnectathon/).
 		There are also two public library implementations available to assist in the creation of FHIR Records, [VRDR-dotnet](https://github.com/nightingaleproject/vrdr-dotnet) and [VRDR_javalib](https://github.com/MortalityReporting/VRDR_javalib).
-    [BFDR](https://build.fhir.org/ig/HL7/bfdr/branches/Sep_2021_Connectathon/). 
-		There are also two public library implementations available to assist in the creation of FHIR Records, [VRDR-dotnet](https://github.com/nightingaleproject/bfdr-dotnet) and [BFDR_javalib](https://github.com/MortalityReporting/BFDR_javalib).
+   		There are also two public library implementations available to assist in the creation of FHIR Records,(https://github.com/nightingaleproject/vital-records-dotnet/tree/main/projects/BFDR.Tests/fixtures/json).
 			
 2. Submit the record using a POST request to the `/vrdrrecord/submission` or `/bfdrrecord/submission` or `/ftdrrecord/submission` endpoint. The following example demonstrates how to make the request using [curl](https://curl.se/):
 ```
@@ -217,7 +216,7 @@ This section provides useful information to developers working on the client imp
 
 ## Developer Notes and Justifications
 - To persist data and make it available to the Jurisidction upon request, the full response message is stored in the ResponseItems table, rather than just the ID in a Message Log. The ResponseItem table serves as the Message Log, see [FHIR Messaging IG](http://build.fhir.org/ig/nightingaleproject/vital_records_fhir_messaging_ig/branches/main/message.html)
-- The `POST /record` end point does not return data because the submission and coding process takes too long to provide a synchronous response. The user can request the message status via the `GET /record` endpoint. 
+- The `POST /vrdrrecord` end point does not return data because the submission and coding process takes too long to provide a synchronous response. The user can request the message status via the `GET /vrdrrecord` endpoint. 
 
 Down the road tasks and questions
 - Existing issue when applying new migrations requires temporarily commenting out the TimedService
