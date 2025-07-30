@@ -151,9 +151,9 @@ This project uses dotnet and docker to run the local database.
 ## Sending VRDR Records
 ### Submission Records
 1. Create a FHIR Record. The standard that specifies this format can be found at following depending on type of records
-	[VRDR](https://nightingaleproject.github.io/vital_records_fhir_messaging_ig/v2.0.0/onnectathon/).
+	[VRDR](https://nightingaleproject.github.io/vital_records_fhir_messaging_ig/v2.0.0).
 		There are also two public library implementations available to assist in the creation of FHIR Records, [VRDR-dotnet](https://github.com/nightingaleproject/vrdr-dotnet) and [VRDR_javalib](https://github.com/MortalityReporting/VRDR_javalib).
-   		There are json examples available to assist in the creation of FHIR Records,[BRDR-Examples](https://github.com/nightingaleproject/vital-records-dotnet/tree/main/projects/BFDR.Tests/fixtures/json).
+   		There is also a .NET library and json examples available to assist in the creation of BFDR FHIR Records,[BFDR-dotnet](https://github.com/nightingaleproject/vital-records-dotnet/tree/main/projects/BFDR) and [BFDR-Examples](https://github.com/nightingaleproject/vital-records-dotnet/tree/main/projects/BFDR.Tests/fixtures/json).
 			
 2. Submit the record using a POST request to the `/vrdrrecord/submission` or `/bfdrrecord/submission` or `/ftdrrecord/submission` endpoint. The following example demonstrates how to make the request using [curl](https://curl.se/):
 ```
